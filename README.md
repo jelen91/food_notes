@@ -53,10 +53,12 @@ MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/food_notes?retr
 PORT=4000
 ```
 
-## Jak to používat
+## Deployment na Vercel
 
-- ráno otevřeš appku, zvolíš dnešní datum a napíšeš snídani
-- odpoledne stejný den otevřeš a doplníš oběd
-- večer doplníš večeři
-- další den se zvolí nový datum a pole je prázdné
-- report všech dnů ti ukáže přehled všech poznámek
+1. Pushni kód na GitHub
+2. Připoj projekt na Vercel (vercel.com)
+3. V nastavení projektu přidej environment variable:
+   - `MONGODB_URI` = tvůj MongoDB Atlas connection string
+4. Deploy
+
+Vercel automaticky rozpozná `vercel.json` a `api/` složku pro serverless functions.
