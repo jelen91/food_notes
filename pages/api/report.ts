@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .find()
       .sort({ date: 1 })
       .toArray();
-    res.json(allNotes.map(n => ({ date: n.date, entries: n.entries || [] })));
+    res.json(allNotes.map(n => ({ date: n.date, entries: n.entries || [], health: n.health || null })));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

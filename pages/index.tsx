@@ -5,9 +5,36 @@ interface Entry {
   note: string;
 }
 
+type Health = Record<string, number | string> | null;
+
+// Hezké popisky a jednotky pro známé metriky z Apple Health. Neznámé klíče se zobrazí tak jak jsou.
+const HEALTH_LABELS: Record<string, { label: string; unit?: string }> = {
+  activeEnergy: { label: 'Aktivní kalorie', unit: 'kcal' },
+  totalEnergy: { label: 'Celkové kalorie', unit: 'kcal' },
+  exerciseMinutes: { label: 'Cvičení', unit: 'min' },
+  standHours: { label: 'Stání', unit: 'h' },
+  steps: { label: 'Kroky' },
+  distanceKm: { label: 'Vzdálenost', unit: 'km' },
+  sleepHours: { label: 'Spánek', unit: 'h' },
+  restingHeartRate: { label: 'Klidový tep', unit: 'bpm' },
+  heartRateAvg: { label: 'Průměrný tep', unit: 'bpm' },
+};
+
+function healthRows(health: Health) {
+  if (!health) return [];
+  return Object.entries(health).map(([key, value]) => {
+    const meta = HEALTH_LABELS[key];
+    return {
+      label: meta?.label ?? key,
+      value: meta?.unit ? `${value} ${meta.unit}` : String(value),
+    };
+  });
+}
+
 export default function Home() {
   const [date, setDate] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [health, setHealth] = useState<Health>(null);
   const [newTime, setNewTime] = useState('');
   const [newNote, setNewNote] = useState('');
   const [message, setMessage] = useState('');
@@ -58,6 +85,7 @@ export default function Home() {
     try {
       const result = await fetchNote(selectedDate);
       setEntries(result.entries || []);
+      setHealth(result.health || null);
       const now = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
       setNewTime(now);
       setNewNote('');
@@ -66,7 +94,7 @@ export default function Home() {
     }
   };
 
-  const handleAddEntry = () => {
+  const handleAddEntry = async () => {
     const time = newTime.trim();
     const note = newNote.trim();
     if (!time || !note) {
@@ -77,23 +105,21 @@ export default function Home() {
     setEntries(newEntries);
     setNewTime(new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }));
     setNewNote('');
-    showMessage('Bod přidán.');
-  };
-
-  const handleDeleteEntry = (index: number) => {
-    const newEntries = entries.filter((_, i) => i !== index);
-    setEntries(newEntries);
-  };
-
-  const handleSave = async () => {
-    if (!date) {
-      showMessage('Vyber datum.', true);
-      return;
-    }
 
     try {
-      await saveNote(date, entries);
-      showMessage('Poznámka uložena.');
+      await saveNote(date, newEntries);
+      showMessage('Bod přidán a uložen.');
+    } catch (err: any) {
+      showMessage(err.message, true);
+    }
+  };
+
+  const handleDeleteEntry = async (index: number) => {
+    const newEntries = entries.filter((_, i) => i !== index);
+    setEntries(newEntries);
+    try {
+      await saveNote(date, newEntries);
+      showMessage('Bod smazán a uloženo.');
     } catch (err: any) {
       showMessage(err.message, true);
     }
@@ -191,13 +217,22 @@ export default function Home() {
               ))}
             </div>
           )}
+        </section>
 
-          <button
-            onClick={handleSave}
-            style={{ width: '100%', marginTop: '12px', padding: '12px', border: 'none', background: '#2563eb', color: 'white', fontWeight: '600', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}
-          >
-            💾 Uložit den
-          </button>
+        <section style={{ margin: '16px', background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.1)', padding: '16px', boxSizing: 'border-box' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: '600', color: '#111827' }}>⌚ Z Apple Watch</h2>
+          {healthRows(health).length === 0 ? (
+            <p style={{ margin: '0', color: '#9ca3af', fontSize: '0.9rem' }}>Žádná data z hodinek pro tento den.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {healthRows(health).map((row) => (
+                <div key={row.label} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px' }}>{row.label}</div>
+                  <div style={{ fontWeight: '700', color: '#111827', fontSize: '1.05rem' }}>{row.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section style={{ margin: '16px', background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.1)', padding: '16px', boxSizing: 'border-box' }}>
@@ -231,6 +266,11 @@ export default function Home() {
                     </div>
                   ) : (
                     <p style={{ margin: '0', fontSize: '0.85rem', color: '#9ca3af' }}>Žádné body</p>
+                  )}
+                  {healthRows(item.health).length > 0 && (
+                    <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6b7280' }}>
+                      ⌚ {healthRows(item.health).map((r) => `${r.label}: ${r.value}`).join(' · ')}
+                    </div>
                   )}
                 </article>
               ))}
