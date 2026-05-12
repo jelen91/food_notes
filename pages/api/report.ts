@@ -1,10 +1,10 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
 
 const mongoUri = process.env.MONGODB_URI;
 const client = new MongoClient(mongoUri!);
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!mongoUri) {
     return res.status(500).json({ error: 'Missing MONGODB_URI' });
   }

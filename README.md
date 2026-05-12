@@ -4,10 +4,9 @@ Jednoduchá aplikace pro mobilní použití: každý den samostatná poznámka o
 
 ## Co je hotové
 
-- `backend/server.ts` – Express API pro ukládání denních poznámek
-- `public/index.html` – jednoduché webové mobilní UI
-- `public/app.js` – logika pro načtení/přepis poznámek a zobrazení reportu
-- `public/styles.css` – responzivní styl pro telefon
+- `pages/index.tsx` – React komponenta pro mobilní UI
+- `pages/api/notes.ts` – API pro ukládání denních poznámek
+- `pages/api/report.ts` – API pro report všech dnů
 
 ## Funkce
 
@@ -20,33 +19,19 @@ Jednoduchá aplikace pro mobilní použití: každý den samostatná poznámka o
 
 ## Instalace
 
-1. V kořenovém adresáři spusť:
+1. `npm install`
+2. Vytvoř `.env.local` s `MONGODB_URI`
+3. `npm run dev` pro development
 
-```bash
-npm install
-```
+## Deployment na Vercel
 
-2. Vytvoř soubor `backend/.env` podle `backend/.env.example`.
+1. Pushni kód na GitHub
+2. Připoj projekt na Vercel (vercel.com)
+3. V nastavení projektu přidej environment variable:
+   - `MONGODB_URI` = tvůj MongoDB Atlas connection string
+4. Deploy
 
-3. Založ zdarma MongoDB Atlas cluster a získej connection string.
-
-4. Spusť aplikaci:
-
-```bash
-npm run dev
-```
-
-5. Otevři prohlížeč na `http://localhost:4000`.
-
-## MongoDB Atlas (free)
-
-- Zaregistruj se na https://www.mongodb.com/atlas
-- Vytvoř nový cluster (Free Tier)
-- Vytvoř databázového uživatele a povol přístup z tvé IP
-- Zkopíruj `MONGODB_URI` do `backend/.env`
-- `MONGODB_URI` musí obsahovat tvé `username:password`, jinak Atlas odmítne připojení
-
-## Příklad `backend/.env`
+Next.js je optimalizované pro Vercel.
 
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/food_notes?retryWrites=true&w=majority
