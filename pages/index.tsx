@@ -13,8 +13,8 @@ const HEALTH_LABELS: Record<string, { label: string; unit?: string }> = {
   totalEnergy: { label: 'Celkové kalorie', unit: 'kcal' },
   restingEnergy: { label: 'Klidové kalorie', unit: 'kcal' },
   exerciseMinutes: { label: 'Cvičení', unit: 'min' },
-  standMinutes: { label: 'Stání', unit: 'min' },
-  standHours: { label: 'Stání', unit: 'h' },
+  standMinutes: { label: 'Minuty ve stoje', unit: 'min' },
+  standHours: { label: 'Hodiny stání (kroužek)', unit: 'h' },
   steps: { label: 'Kroky' },
   distanceKm: { label: 'Vzdálenost', unit: 'km' },
   sleepHours: { label: 'Spánek', unit: 'h' },
@@ -26,6 +26,14 @@ const HEALTH_LABELS: Record<string, { label: string; unit?: string }> = {
   bloodOxygen: { label: 'Kyslík v krvi', unit: '%' },
   weightKg: { label: 'Váha', unit: 'kg' },
   bodyFatPct: { label: 'Tělesný tuk', unit: '%' },
+  timeInDaylight: { label: 'Na denním světle', unit: 'min' },
+  walkingSpeed: { label: 'Rychlost chůze', unit: 'km/h' },
+  walkingStepLength: { label: 'Délka kroku', unit: 'cm' },
+  walkingDoubleSupportPercentage: { label: 'Dvojí opora', unit: '%' },
+  physicalEffort: { label: 'Fyzická námaha', unit: 'MET' },
+  headphoneAudioExposure: { label: 'Hlasitost ve sluchátkách', unit: 'dB' },
+  environmentalAudioExposure: { label: 'Hlučnost okolí', unit: 'dB' },
+  flightsClimbed: { label: 'Vyšlapaná patra' },
 };
 
 function healthRows(health: Health) {
