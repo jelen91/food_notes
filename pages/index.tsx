@@ -11,13 +11,21 @@ type Health = Record<string, number | string> | null;
 const HEALTH_LABELS: Record<string, { label: string; unit?: string }> = {
   activeEnergy: { label: 'Aktivní kalorie', unit: 'kcal' },
   totalEnergy: { label: 'Celkové kalorie', unit: 'kcal' },
+  restingEnergy: { label: 'Klidové kalorie', unit: 'kcal' },
   exerciseMinutes: { label: 'Cvičení', unit: 'min' },
+  standMinutes: { label: 'Stání', unit: 'min' },
   standHours: { label: 'Stání', unit: 'h' },
   steps: { label: 'Kroky' },
   distanceKm: { label: 'Vzdálenost', unit: 'km' },
   sleepHours: { label: 'Spánek', unit: 'h' },
   restingHeartRate: { label: 'Klidový tep', unit: 'bpm' },
   heartRateAvg: { label: 'Průměrný tep', unit: 'bpm' },
+  walkingHeartRate: { label: 'Tep při chůzi', unit: 'bpm' },
+  hrv: { label: 'HRV', unit: 'ms' },
+  respiratoryRate: { label: 'Dech', unit: '/min' },
+  bloodOxygen: { label: 'Kyslík v krvi', unit: '%' },
+  weightKg: { label: 'Váha', unit: 'kg' },
+  bodyFatPct: { label: 'Tělesný tuk', unit: '%' },
 };
 
 function healthRows(health: Health) {
