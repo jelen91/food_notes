@@ -149,6 +149,53 @@ export default function Home() {
     }
   };
 
+  // Stáhne všechna data jako přehledný Markdown soubor – vhodné vložit AI k vyhodnocení.
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/report');
+      if (!response.ok) throw new Error('Nepodařilo se načíst data k exportu.');
+      const days: Array<{ date: string; entries: Entry[]; health: Health }> = await response.json();
+
+      const lines: string[] = [];
+      lines.push('# Food Notes – export');
+      lines.push(`Vygenerováno: ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
+      lines.push('');
+      lines.push('Každý den obsahuje záznamy o jídle (čas – co) a denní souhrn zdravotních dat z Apple Watch.');
+      lines.push('');
+
+      const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
+      for (const day of sorted) {
+        lines.push(`## ${day.date}`);
+        if (day.entries && day.entries.length > 0) {
+          lines.push('### Jídlo');
+          for (const e of day.entries) lines.push(`- ${e.time} – ${e.note}`);
+        } else {
+          lines.push('### Jídlo');
+          lines.push('- (žádné záznamy)');
+        }
+        const rows = healthRows(day.health);
+        if (rows.length > 0) {
+          lines.push('### Zdraví');
+          lines.push(rows.map((r) => `${r.label}: ${r.value}`).join(' · '));
+        }
+        lines.push('');
+      }
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `food-notes-${new Date().toISOString().slice(0, 10)}.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showMessage('Export stažen.');
+    } catch (err: any) {
+      showMessage(err.message, true);
+    }
+  };
+
   const handleEdit = async (editDate: string) => {
     setDate(editDate);
     await loadDay(editDate);
@@ -257,6 +304,13 @@ export default function Home() {
             style={{ width: '100%', padding: '12px', border: 'none', background: '#7c3aed', color: 'white', fontWeight: '600', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}
           >
             📊 Zobrazit report všech dnů
+          </button>
+
+          <button
+            onClick={handleExport}
+            style={{ width: '100%', marginTop: '8px', padding: '12px', border: '1px solid #7c3aed', background: 'white', color: '#7c3aed', fontWeight: '600', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}
+          >
+            📥 Stáhnout vše pro AI (.md)
           </button>
 
           {report.length > 0 && (
