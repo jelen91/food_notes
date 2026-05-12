@@ -20,18 +20,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Date is required.' });
       }
       const note = await notes.findOne({ date });
-      res.json({ date, text: note?.text ?? '' });
+      res.json({ date, entries: note?.entries ?? [] });
     } else if (req.method === 'POST') {
-      const { date, text } = req.body as { date?: string; text?: string };
-      if (!date || typeof text !== 'string') {
-        return res.status(400).json({ error: 'Both date and text are required.' });
+      const { date, entries } = req.body as { date?: string; entries?: Array<{ time: string; note: string }> };
+      if (!date || !Array.isArray(entries)) {
+        return res.status(400).json({ error: 'Both date and entries array are required.' });
       }
       await notes.updateOne(
         { date },
-        { $set: { text, updatedAt: new Date() } },
+        { $set: { entries, updatedAt: new Date() } },
         { upsert: true }
       );
-      res.json({ success: true, date, text });
+      res.json({ success: true, date, entries });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
