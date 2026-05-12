@@ -3,9 +3,76 @@ import { useState, useEffect } from 'react';
 interface Entry {
   time: string;
   note: string;
+  gas?: number;       // 1–5, volitelné (1 = minimum, 5 = extrém)
+  pressure?: number;  // 1–5, volitelné – tlak v břiše
 }
 
 type Health = Record<string, number | string> | null;
+
+// Volitelné symptomy hodnocené 1–5, navázané na konkrétní záznam v deníku.
+const SYMPTOMS: Array<{ key: 'gas' | 'pressure'; label: string; tag: string }> = [
+  { key: 'gas', label: 'Plyny', tag: 'Plyny' },
+  { key: 'pressure', label: 'Tlak v břiše', tag: 'Tlak' },
+];
+
+// "[Plyny: 4, Tlak: 2] " – prefix pro strojové parsování v .md exportu; prázdný string když nic není vyplněno.
+function symptomTag(entry: Entry): string {
+  const parts = SYMPTOMS.filter((s) => entry[s.key]).map((s) => `${s.tag}: ${entry[s.key]}`);
+  return parts.length ? `[${parts.join(', ')}] ` : '';
+}
+
+// Řada tlačítek 1–5 + "—" pro rychlé/volitelné odkliknutí úrovně symptomu.
+function SymptomPicker({
+  label,
+  value,
+  onChange,
+  compact = false,
+}: {
+  label: string;
+  value?: number;
+  onChange: (v: number | undefined) => void;
+  compact?: boolean;
+}) {
+  const pad = compact ? '4px 0' : '8px 0';
+  return (
+    <div style={{ marginBottom: compact ? 4 : 10 }}>
+      <div style={{ fontSize: compact ? '0.7rem' : '0.8rem', color: '#6b7280', marginBottom: 4 }}>{label}</div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {[1, 2, 3, 4, 5].map((n) => {
+          const active = value === n;
+          return (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(active ? undefined : n)}
+              style={{
+                flex: 1,
+                padding: pad,
+                borderRadius: 6,
+                fontSize: compact ? '0.8rem' : '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: active ? '1px solid #b45309' : '1px solid #e5e7eb',
+                background: active ? '#f59e0b' : 'white',
+                color: active ? 'white' : '#374151',
+              }}
+            >
+              {n}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          title="Bez hodnocení"
+          style={{ padding: '0 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', color: '#9ca3af', cursor: 'pointer', fontSize: compact ? '0.8rem' : '0.9rem' }}
+        >
+          —
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Hezké popisky a jednotky pro známé metriky z Apple Health. Neznámé klíče se zobrazí tak jak jsou.
 const HEALTH_LABELS: Record<string, { label: string; unit?: string }> = {
@@ -53,6 +120,8 @@ export default function Home() {
   const [health, setHealth] = useState<Health>(null);
   const [newTime, setNewTime] = useState('');
   const [newNote, setNewNote] = useState('');
+  const [newGas, setNewGas] = useState<number | undefined>(undefined);
+  const [newPressure, setNewPressure] = useState<number | undefined>(undefined);
   const [message, setMessage] = useState('');
   const [report, setReport] = useState([]);
 
@@ -105,6 +174,8 @@ export default function Home() {
       const now = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
       setNewTime(now);
       setNewNote('');
+      setNewGas(undefined);
+      setNewPressure(undefined);
     } catch (err: any) {
       showMessage(err.message, true);
     }
@@ -117,10 +188,15 @@ export default function Home() {
       showMessage('Vyplň čas a poznámku.', true);
       return;
     }
-    const newEntries = [...entries, { time, note }];
+    const entry: Entry = { time, note };
+    if (newGas) entry.gas = newGas;
+    if (newPressure) entry.pressure = newPressure;
+    const newEntries = [...entries, entry];
     setEntries(newEntries);
     setNewTime(new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }));
     setNewNote('');
+    setNewGas(undefined);
+    setNewPressure(undefined);
 
     try {
       await saveNote(date, newEntries);
@@ -136,6 +212,24 @@ export default function Home() {
     try {
       await saveNote(date, newEntries);
       showMessage('Bod smazán a uloženo.');
+    } catch (err: any) {
+      showMessage(err.message, true);
+    }
+  };
+
+  // Nastaví/zruší úroveň symptomu (gas/pressure) na konkrétním už uloženém záznamu a hned uloží.
+  const setEntrySymptom = async (index: number, key: 'gas' | 'pressure', value: number | undefined) => {
+    const newEntries = entries.map((e, i) => {
+      if (i !== index) return e;
+      const updated: Entry = { ...e };
+      if (value === undefined) delete updated[key];
+      else updated[key] = value;
+      return updated;
+    });
+    setEntries(newEntries);
+    try {
+      await saveNote(date, newEntries);
+      showMessage('Uloženo.');
     } catch (err: any) {
       showMessage(err.message, true);
     }
@@ -161,6 +255,7 @@ export default function Home() {
       lines.push(`Vygenerováno: ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
       lines.push('');
       lines.push('Každý den obsahuje záznamy o jídle (čas – co) a denní souhrn zdravotních dat z Apple Watch.');
+      lines.push('Volitelné symptomy u záznamu jsou v hranatých závorkách na začátku: [Plyny: 1–5, Tlak: 1–5] (1 = minimum, 5 = extrém).');
       lines.push('');
 
       const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
@@ -168,7 +263,7 @@ export default function Home() {
         lines.push(`## ${day.date}`);
         if (day.entries && day.entries.length > 0) {
           lines.push('### Jídlo');
-          for (const e of day.entries) lines.push(`- ${e.time} – ${e.note}`);
+          for (const e of day.entries) lines.push(`- ${e.time} – ${symptomTag(e)}${e.note}`);
         } else {
           lines.push('### Jídlo');
           lines.push('- (žádné záznamy)');
@@ -245,6 +340,12 @@ export default function Home() {
             style={{ width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '12px', fontFamily: 'inherit' }}
           />
 
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Symptomy (volitelné, 1 = min · 5 = extrém)</div>
+            <SymptomPicker label="Plyny" value={newGas} onChange={setNewGas} />
+            <SymptomPicker label="Tlak v břiše" value={newPressure} onChange={setNewPressure} />
+          </div>
+
           <button
             onClick={handleAddEntry}
             style={{ width: '100%', padding: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: '600', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}
@@ -265,17 +366,38 @@ export default function Home() {
           ) : (
             <div>
               {entries.map((entry, idx) => (
-                <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.9rem', marginBottom: '4px' }}>{entry.time}</div>
-                    <div style={{ color: '#374151', fontSize: '0.9rem' }}>{entry.note}</div>
+                <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.9rem', marginBottom: '4px' }}>
+                        {entry.time}
+                        {symptomTag(entry) && (
+                          <span style={{ marginLeft: 8, fontWeight: 600, color: '#b45309', background: '#fef3c7', borderRadius: 4, padding: '1px 6px', fontSize: '0.75rem' }}>
+                            {symptomTag(entry).trim()}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ color: '#374151', fontSize: '0.9rem' }}>{entry.note}</div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteEntry(idx)}
+                      style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}
+                    >
+                      Smazat
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteEntry(idx)}
-                    style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}
-                  >
-                    Smazat
-                  </button>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {SYMPTOMS.map((s) => (
+                      <div key={s.key} style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                        <SymptomPicker
+                          compact
+                          label={s.label}
+                          value={entry[s.key]}
+                          onChange={(v) => setEntrySymptom(idx, s.key, v)}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -330,7 +452,9 @@ export default function Home() {
                     <div>
                       {item.entries.map((entry: Entry, idx: number) => (
                         <div key={idx} style={{ background: '#f9fafb', padding: '8px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem' }}>
-                          <span style={{ fontWeight: '600', color: '#2563eb' }}>{entry.time}</span> - {entry.note}
+                          <span style={{ fontWeight: '600', color: '#2563eb' }}>{entry.time}</span> -{' '}
+                          {symptomTag(entry) && <span style={{ color: '#b45309', fontWeight: 600 }}>{symptomTag(entry)}</span>}
+                          {entry.note}
                         </div>
                       ))}
                     </div>
