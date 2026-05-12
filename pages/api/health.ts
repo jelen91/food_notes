@@ -144,12 +144,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (haeByDate) {
       const dates = Object.keys(haeByDate);
       for (const date of dates) {
-        // sloučit s případnými už uloženými health daty pro ten den
-        const existing = await notes.findOne({ date });
-        const merged = { ...(existing?.health ?? {}), ...haeByDate[date] };
+        // Health Auto Export posílá kompletní snímek vybraných metrik za den -> přepíšeme
+        // (díky tomu odznačení metriky v HAE způsobí, že příště z DB zmizí).
         await notes.updateOne(
           { date },
-          { $set: { health: merged, healthUpdatedAt: new Date() } },
+          { $set: { health: haeByDate[date], healthUpdatedAt: new Date() } },
           { upsert: true }
         );
       }
