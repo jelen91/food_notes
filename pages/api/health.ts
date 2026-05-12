@@ -34,6 +34,23 @@ const HAE_METRIC_MAP: Record<string, string> = {
   sleep_analysis: 'sleepHours',
 };
 
+// Kumulativní metriky (přes den se sčítají). Vše ostatní se průměruje.
+const CUMULATIVE = new Set([
+  'step_count',
+  'active_energy',
+  'basal_energy_burned',
+  'apple_exercise_time',
+  'apple_stand_time',
+  'apple_stand_hour',
+  'walking_running_distance',
+  'cycling_distance',
+  'swimming_distance',
+  'flights_climbed',
+  'time_in_daylight',
+  'dietary_energy',
+  'sleep_analysis',
+]);
+
 function camelCase(s: string) {
   return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
@@ -47,32 +64,50 @@ function toDateKey(raw: unknown): string | null {
 
 function num(v: unknown): number | null {
   const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
-  return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
+  return Number.isFinite(n) ? n : null;
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 // Health Auto Export posílá { data: { metrics: [ { name, units, data: [ { date, qty | Avg | asleep ... } ] } ] } }
-// Vrátí mapu { "YYYY-MM-DD": { klíč: hodnota, ... } }.
+// Datové body mohou být po hodinách/minutách – kumulativní metriky sečteme, ostatní zprůměrujeme, vždy po dnech.
 function parseHealthAutoExport(body: any): Record<string, Health> | null {
   const metrics = body?.data?.metrics;
   if (!Array.isArray(metrics)) return null;
-  const byDate: Record<string, Health> = {};
+
+  // akumulátor: dateKey -> metricKey -> { sum, count }
+  const acc: Record<string, Record<string, { sum: number; count: number; cumulative: boolean }>> = {};
+
   for (const metric of metrics) {
     const rawName = String(metric?.name ?? '');
     if (!rawName || !Array.isArray(metric?.data)) continue;
     const key = HAE_METRIC_MAP[rawName] ?? camelCase(rawName);
+    const cumulative = CUMULATIVE.has(rawName);
     for (const point of metric.data) {
       const dateKey = toDateKey(point?.date);
       if (!dateKey) continue;
-      // Spánek: HAE dává { asleep, inBed, ... } v hodinách; tep: { Avg, Min, Max }.
-      let value =
+      // Spánek: { asleep, inBed, ... } v hodinách; tep: { Avg, Min, Max }; jinak { qty } nebo { value }.
+      const value =
         num(point?.qty) ??
         num(point?.Avg) ??
         num(point?.asleep) ??
         num(point?.totalSleep) ??
         num(point?.value);
       if (value == null) continue;
-      if (!byDate[dateKey]) byDate[dateKey] = {};
-      byDate[dateKey][key] = value;
+      if (!acc[dateKey]) acc[dateKey] = {};
+      if (!acc[dateKey][key]) acc[dateKey][key] = { sum: 0, count: 0, cumulative };
+      acc[dateKey][key].sum += value;
+      acc[dateKey][key].count += 1;
+    }
+  }
+
+  const byDate: Record<string, Health> = {};
+  for (const [dateKey, metricsForDay] of Object.entries(acc)) {
+    byDate[dateKey] = {};
+    for (const [key, { sum, count, cumulative }] of Object.entries(metricsForDay)) {
+      byDate[dateKey][key] = round2(cumulative ? sum : sum / count);
     }
   }
   return Object.keys(byDate).length ? byDate : null;
