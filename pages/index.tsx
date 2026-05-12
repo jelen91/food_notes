@@ -86,9 +86,10 @@ export default function Home() {
   };
 
   return (
-    <main style={{ maxWidth: '520px', margin: '0 auto', padding: '24px' }}>
-      <h1>Food Notes</h1>
-      <section style={{ background: 'white', borderRadius: '24px', boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)', padding: '20px' }}>
+    <div style={{ width: '100%', minHeight: '100vh', boxSizing: 'border-box', padding: '0' }}>
+      <main style={{ maxWidth: '100%', margin: '0', padding: '0' }}>
+        <h1>Food Notes</h1>
+        <section style={{ background: 'white', borderRadius: '24px', boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)', padding: '20px' }}>
         <label style={{ display: 'block', margin: '16px 0 8px', fontWeight: '600' }}>
           Datum
           <input
@@ -150,5 +151,6 @@ export default function Home() {
         </div>
       </section>
     </main>
+    </div>
   );
 }
