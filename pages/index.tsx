@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Entry {
   time: string;
@@ -246,9 +247,13 @@ export default function Home() {
   // Stáhne všechna data jako přehledný Markdown soubor – vhodné vložit AI k vyhodnocení.
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/report');
-      if (!response.ok) throw new Error('Nepodařilo se načíst data k exportu.');
-      const days: Array<{ date: string; entries: Entry[]; health: Health }> = await response.json();
+      const [reportRes, bloodRes] = await Promise.all([
+        fetch('/api/report'),
+        fetch('/api/blood-tests'),
+      ]);
+      if (!reportRes.ok) throw new Error('Nepodařilo se načíst data k exportu.');
+      const days: Array<{ date: string; entries: Entry[]; health: Health }> = await reportRes.json();
+      const bloodTests: Array<{ date: string; filename: string | null; size: number | null }> = bloodRes.ok ? await bloodRes.json() : [];
 
       const lines: string[] = [];
       lines.push('# Food Notes – export');
@@ -257,6 +262,13 @@ export default function Home() {
       lines.push('Každý den obsahuje záznamy o jídle (čas – co) a denní souhrn zdravotních dat z Apple Watch.');
       lines.push('Volitelné symptomy u záznamu jsou v hranatých závorkách na začátku: [Plyny: 1–5, Tlak: 1–5] (1 = minimum, 5 = extrém).');
       lines.push('');
+
+      if (bloodTests.length > 0) {
+        lines.push('## Krevní testy (archiv)');
+        lines.push('Seznam dat odběrů – samotná PDF nejsou v exportu, jen reference. Stáhni v appce na /blood.');
+        for (const t of bloodTests) lines.push(`- ${t.date} – ${t.filename ?? '(bez názvu)'}`);
+        lines.push('');
+      }
 
       const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date));
       for (const day of sorted) {
@@ -445,6 +457,13 @@ export default function Home() {
           >
             📥 Stáhnout vše pro AI (.md)
           </button>
+
+          <Link
+            href="/blood"
+            style={{ display: 'block', width: '100%', marginTop: '8px', padding: '12px', border: 'none', background: '#be123c', color: 'white', fontWeight: 600, borderRadius: 8, textDecoration: 'none', fontSize: '0.9rem', textAlign: 'center', boxSizing: 'border-box' }}
+          >
+            🩸 Krevní testy (archiv PDF)
+          </Link>
 
           {report.length > 0 && (
             <div style={{ marginTop: '16px' }}>
