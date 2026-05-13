@@ -297,10 +297,21 @@ export default function Home() {
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  };
+
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#f7f8fc', padding: '0' }}>
       <main style={{ maxWidth: '100%', margin: '0', padding: '0' }}>
-        <div style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', padding: '24px 16px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', padding: '24px 16px', textAlign: 'center', position: 'relative' }}>
+          <button
+            onClick={handleLogout}
+            style={{ position: 'absolute', top: 12, right: 12, padding: '6px 10px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+          >
+            Odhlásit
+          </button>
           <h1 style={{ margin: '0 0 8px', fontSize: '1.75rem', fontWeight: '700' }}>Food Notes</h1>
           <p style={{ margin: '0', fontSize: '0.9rem', opacity: 0.9 }}>Zaznamenej svoji stravu...</p>
         </div>

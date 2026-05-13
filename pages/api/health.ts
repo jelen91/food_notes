@@ -137,6 +137,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    // POST chrání zvláštní klíč v hlavičce x-health-key (Health Auto Export ho přidá do Headers).
+    const required = process.env.HEALTH_API_KEY;
+    if (required) {
+      const provided = req.headers['x-health-key'];
+      if (provided !== required) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+    }
+
     // Tělo může přijít ve dvou tvarech:
     // 1) { date, health: {...} }  — jednoduchý vlastní formát (Apple Shortcut)
     // 2) { data: { metrics: [...] } }  — formát aplikace Health Auto Export
