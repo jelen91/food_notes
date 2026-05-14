@@ -211,6 +211,11 @@ export default function Home() {
   };
 
   const handleDeleteEntry = async (index: number) => {
+    const entry = entries[index];
+    const preview = entry?.note ? entry.note.slice(0, 60) : '';
+    if (!confirm(`Opravdu smazat záznam ${entry?.time}${preview ? ` – ${preview}${entry.note.length > 60 ? '…' : ''}` : ''}?`)) {
+      return;
+    }
     const newEntries = entries.filter((_, i) => i !== index);
     setEntries(newEntries);
     try {
