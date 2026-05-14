@@ -123,6 +123,9 @@ export default function Home() {
   const [newNote, setNewNote] = useState('');
   const [newGas, setNewGas] = useState<number | undefined>(undefined);
   const [newPressure, setNewPressure] = useState<number | undefined>(undefined);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editTime, setEditTime] = useState('');
+  const [editNote, setEditNote] = useState('');
   const [message, setMessage] = useState('');
   const [report, setReport] = useState([]);
 
@@ -213,6 +216,39 @@ export default function Home() {
     try {
       await saveNote(date, newEntries);
       showMessage('Bod smazán a uloženo.');
+    } catch (err: any) {
+      showMessage(err.message, true);
+    }
+  };
+
+  const startEdit = (index: number) => {
+    setEditingIdx(index);
+    setEditTime(entries[index].time);
+    setEditNote(entries[index].note);
+  };
+
+  const cancelEdit = () => {
+    setEditingIdx(null);
+    setEditTime('');
+    setEditNote('');
+  };
+
+  const saveEdit = async () => {
+    if (editingIdx === null) return;
+    const time = editTime.trim();
+    const note = editNote.trim();
+    if (!time || !note) {
+      showMessage('Vyplň čas i poznámku.', true);
+      return;
+    }
+    const newEntries = entries.map((e, i) => (i === editingIdx ? { ...e, time, note } : e));
+    setEntries(newEntries);
+    setEditingIdx(null);
+    setEditTime('');
+    setEditNote('');
+    try {
+      await saveNote(date, newEntries);
+      showMessage('Záznam upraven.');
     } catch (err: any) {
       showMessage(err.message, true);
     }
@@ -388,41 +424,85 @@ export default function Home() {
             <p style={{ margin: '0', color: '#9ca3af', fontSize: '0.9rem' }}>Zatím žádné. Přidej první bod! 👆</p>
           ) : (
             <div>
-              {entries.map((entry, idx) => (
-                <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.9rem', marginBottom: '4px' }}>
-                        {entry.time}
-                        {symptomTag(entry) && (
-                          <span style={{ marginLeft: 8, fontWeight: 600, color: '#b45309', background: '#fef3c7', borderRadius: 4, padding: '1px 6px', fontSize: '0.75rem' }}>
-                            {symptomTag(entry).trim()}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ color: '#374151', fontSize: '0.9rem' }}>{entry.note}</div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteEntry(idx)}
-                      style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}
-                    >
-                      Smazat
-                    </button>
-                  </div>
-                  <div style={{ marginTop: '10px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {SYMPTOMS.map((s) => (
-                      <div key={s.key} style={{ flex: '1 1 140px', minWidth: '140px' }}>
-                        <SymptomPicker
-                          compact
-                          label={s.label}
-                          value={entry[s.key]}
-                          onChange={(v) => setEntrySymptom(idx, s.key, v)}
+              {entries.map((entry, idx) => {
+                const isEditing = editingIdx === idx;
+                return (
+                  <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="time"
+                          value={editTime}
+                          onChange={(e) => setEditTime(e.target.value)}
+                          style={{ width: '100%', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '8px' }}
                         />
+                        <textarea
+                          rows={3}
+                          value={editNote}
+                          onChange={(e) => setEditNote(e.target.value)}
+                          style={{ width: '100%', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '0.9rem', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: '8px' }}
+                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={saveEdit}
+                            style={{ flex: 1, padding: '8px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            Uložit
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            style={{ flex: 1, padding: '8px', background: 'white', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            Zrušit
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', color: '#2563eb', fontSize: '0.9rem', marginBottom: '4px' }}>
+                              {entry.time}
+                              {symptomTag(entry) && (
+                                <span style={{ marginLeft: 8, fontWeight: 600, color: '#b45309', background: '#fef3c7', borderRadius: 4, padding: '1px 6px', fontSize: '0.75rem' }}>
+                                  {symptomTag(entry).trim()}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ color: '#374151', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{entry.note}</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <button
+                              onClick={() => startEdit(idx)}
+                              style={{ padding: '4px 8px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}
+                            >
+                              Upravit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(idx)}
+                              style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}
+                            >
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '10px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          {SYMPTOMS.map((s) => (
+                            <div key={s.key} style={{ flex: '1 1 140px', minWidth: '140px' }}>
+                              <SymptomPicker
+                                compact
+                                label={s.label}
+                                value={entry[s.key]}
+                                onChange={(v) => setEntrySymptom(idx, s.key, v)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
