@@ -188,8 +188,12 @@ export default function Home() {
   const handleAddEntry = async () => {
     const time = newTime.trim();
     const note = newNote.trim();
-    if (!time || !note) {
-      showMessage('Vyplň čas a poznámku.', true);
+    if (!time) {
+      showMessage('Vyplň čas.', true);
+      return;
+    }
+    if (!note && !newGas && !newPressure) {
+      showMessage('Vyplň poznámku nebo aspoň jeden symptom.', true);
       return;
     }
     const entry: Entry = { time, note };
@@ -242,8 +246,13 @@ export default function Home() {
     if (editingIdx === null) return;
     const time = editTime.trim();
     const note = editNote.trim();
-    if (!time || !note) {
-      showMessage('Vyplň čas i poznámku.', true);
+    if (!time) {
+      showMessage('Vyplň čas.', true);
+      return;
+    }
+    const original = entries[editingIdx];
+    if (!note && !original?.gas && !original?.pressure) {
+      showMessage('Záznam musí mít poznámku nebo aspoň jeden symptom.', true);
       return;
     }
     const newEntries = entries.map((e, i) => (i === editingIdx ? { ...e, time, note } : e));
@@ -316,7 +325,7 @@ export default function Home() {
         lines.push(`## ${day.date}`);
         if (day.entries && day.entries.length > 0) {
           lines.push('### Jídlo');
-          for (const e of day.entries) lines.push(`- ${e.time} – ${symptomTag(e)}${e.note}`);
+          for (const e of day.entries) lines.push(`- ${e.time} – ${symptomTag(e)}${e.note}`.trimEnd());
         } else {
           lines.push('### Jídlo');
           lines.push('- (žádné záznamy)');
@@ -400,7 +409,7 @@ export default function Home() {
             rows={3}
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Co jsi měl k jídlu?"
+            placeholder="Co jsi měl k jídlu? (volitelné, když uložíš jen symptom)"
             style={{ width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '12px', fontFamily: 'inherit' }}
           />
 
@@ -474,7 +483,9 @@ export default function Home() {
                                 </span>
                               )}
                             </div>
-                            <div style={{ color: '#374151', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{entry.note}</div>
+                            {entry.note && (
+                              <div style={{ color: '#374151', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{entry.note}</div>
+                            )}
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <button
@@ -567,7 +578,8 @@ export default function Home() {
                     <div>
                       {item.entries.map((entry: Entry, idx: number) => (
                         <div key={idx} style={{ background: '#f9fafb', padding: '8px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem' }}>
-                          <span style={{ fontWeight: '600', color: '#2563eb' }}>{entry.time}</span> -{' '}
+                          <span style={{ fontWeight: '600', color: '#2563eb' }}>{entry.time}</span>
+                          {(symptomTag(entry) || entry.note) && ' - '}
                           {symptomTag(entry) && <span style={{ color: '#b45309', fontWeight: 600 }}>{symptomTag(entry)}</span>}
                           {entry.note}
                         </div>
