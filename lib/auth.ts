@@ -48,9 +48,10 @@ export async function verifyToken(secret: string, token: string | undefined | nu
   try {
     const key = await getKey(secret);
     const sig = fromBase64Url(sigStr);
-    // Kopie do čistého ArrayBuffer kvůli přísnému typu BufferSource v některých verzích TS.
-    const sigBuf = sig.buffer.slice(sig.byteOffset, sig.byteOffset + sig.byteLength) as ArrayBuffer;
-    return await crypto.subtle.verify('HMAC', key, sigBuf, enc.encode(expStr));
+    // Podpis se předává jako Uint8Array. ArrayBuffer vyrobený uvnitř Edge sandboxu neprojde
+    // kontrolou `instanceof ArrayBuffer` v runtime (jiná realm) a verify by spadl – proto jen
+    // přetypování, žádná kopie do ArrayBufferu.
+    return await crypto.subtle.verify('HMAC', key, sig as unknown as BufferSource, enc.encode(expStr));
   } catch {
     return false;
   }

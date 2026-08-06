@@ -1,61 +1,54 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { MongoClient } from 'mongodb';
-
-const mongoUri = process.env.MONGODB_URI;
-const client = new MongoClient(mongoUri!);
+import { getDb, DAYS } from '../../lib/db';
+import { isValidDate, normalizeEntries, normalizeScales } from '../../lib/schema';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!mongoUri) {
-    return res.status(500).json({ error: 'Missing MONGODB_URI' });
-  }
-
   try {
-    await client.connect();
-    const db = client.db('food_notes');
-    const notes = db.collection('daily_notes');
+    const db = await getDb();
+    const days = db.collection(DAYS);
 
     if (req.method === 'GET') {
       const date = String(req.query.date ?? '').trim();
-      if (!date) {
-        return res.status(400).json({ error: 'Date is required.' });
-      }
-      const note = await notes.findOne({ date });
-      res.json({ date, entries: note?.entries ?? [], health: note?.health ?? null });
-    } else if (req.method === 'POST') {
-      const { date, entries } = req.body as {
-        date?: string;
-        entries?: Array<{ time?: string; note?: string; gas?: unknown; pressure?: unknown }>;
-      };
-      if (!date || !Array.isArray(entries)) {
-        return res.status(400).json({ error: 'Both date and entries array are required.' });
-      }
-      // 1–5 celé číslo, jinak symptom vynechán
-      const level = (v: unknown): number | undefined => {
-        const n = Math.round(Number(v));
-        return Number.isFinite(n) && n >= 1 && n <= 5 ? n : undefined;
-      };
-      const cleanEntries = entries.map((e) => {
-        const entry: { time: string; note: string; gas?: number; pressure?: number } = {
-          time: String(e?.time ?? ''),
-          note: String(e?.note ?? ''),
-        };
-        const gas = level(e?.gas);
-        const pressure = level(e?.pressure);
-        if (gas !== undefined) entry.gas = gas;
-        if (pressure !== undefined) entry.pressure = pressure;
-        return entry;
+      if (!isValidDate(date)) return res.status(400).json({ error: 'Date (YYYY-MM-DD) is required.' });
+      const doc = await days.findOne({ date });
+      // Staré záznamy stravovacího deníku se normalizují na aktuální model až při čtení.
+      return res.json({
+        date,
+        entries: normalizeEntries(doc?.entries),
+        scales: normalizeScales(doc?.scales),
+        health: doc?.health ?? null,
+        healthUnits: doc?.healthUnits ?? null,
+        workouts: doc?.workouts ?? null,
       });
-      await notes.updateOne(
-        { date },
-        { $set: { entries: cleanEntries, updatedAt: new Date() } },
-        { upsert: true }
-      );
-      res.json({ success: true, date, entries: cleanEntries });
-    } else {
-      res.status(405).json({ error: 'Method not allowed' });
     }
+
+    if (req.method === 'POST') {
+      const { date, entries, scales } = req.body ?? {};
+      if (!isValidDate(date)) return res.status(400).json({ error: 'Date (YYYY-MM-DD) is required.' });
+      if (entries === undefined && scales === undefined) {
+        return res.status(400).json({ error: 'Nothing to save – send entries and/or scales.' });
+      }
+
+      // Částečný zápis: pošle se jen to, co se mění (události nebo škály).
+      const update: Record<string, unknown> = { updatedAt: new Date() };
+      let cleanEntries;
+      let cleanScales;
+      if (entries !== undefined) {
+        cleanEntries = normalizeEntries(entries);
+        update.entries = cleanEntries;
+      }
+      if (scales !== undefined) {
+        cleanScales = normalizeScales(scales);
+        update.scales = cleanScales;
+      }
+
+      await days.updateOne({ date }, { $set: update }, { upsert: true });
+      return res.json({ success: true, date, entries: cleanEntries, scales: cleanScales });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

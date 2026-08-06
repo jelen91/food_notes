@@ -36,7 +36,7 @@ export default function Login() {
         onSubmit={handleSubmit}
         style={{ background: 'white', borderRadius: 16, padding: 24, width: '100%', maxWidth: 360, boxShadow: '0 4px 12px rgba(15, 23, 42, 0.1)' }}
       >
-        <h1 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 700, color: '#111827' }}>Food Notes</h1>
+        <h1 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 700, color: '#111827' }}>Zdravotní deník</h1>
         <p style={{ margin: '0 0 16px', fontSize: '0.9rem', color: '#6b7280' }}>Zadej heslo pro přístup.</p>
         <input
           type="password"

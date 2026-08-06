@@ -1,8 +1,8 @@
 {
-  "name": "food-notes",
-  "version": "0.1.0",
+  "name": "health-journal",
+  "version": "0.2.0",
   "private": true,
-  "description": "Daily food notes app with MongoDB storage and report export.",
+  "description": "Zdravotní deník: události, denní škály, epizody slabosti, Apple Health a laboratoře s exportem pro AI analýzu.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
