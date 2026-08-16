@@ -1,13 +1,5 @@
 import { ReactNode } from 'react';
-import { ScaleDirection } from '../lib/schema';
-
-/** Barva aktivního stupně podle hodnoty a směru škály (zelená = dobře, červená = špatně). */
-export function scaleColor(value: number, max: number, direction?: ScaleDirection): string {
-  if (!direction) return 'hsl(38 92% 45%)';
-  const t = (value - 1) / Math.max(1, max - 1);
-  const hue = direction === 'higherBetter' ? t * 120 : 120 - t * 120;
-  return `hsl(${Math.round(hue)} 62% 40%)`;
-}
+import { ScaleDirection } from '../lib/tenant/types';
 
 export function Scale({
   label,
@@ -24,6 +16,7 @@ export function Scale({
   onChange: (v: number | undefined) => void;
   min?: number;
   max?: number;
+  /** Zachováno kvůli konfiguraci škál; na vzhled se nepromítá, aby byl deník klidný. */
   direction?: ScaleDirection;
 }) {
   const steps = Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -36,14 +29,14 @@ export function Scale({
       <div className="scale-btns">
         {steps.map((n) => {
           const active = value === n;
-          const bg = scaleColor(n, max, direction);
           return (
             <button
               key={n}
               type="button"
+              className={active ? 'active' : undefined}
+              aria-pressed={active}
               aria-label={`${label} ${n}`}
               onClick={() => onChange(active ? undefined : n)}
-              style={active ? { background: bg, borderColor: bg, color: '#fff' } : undefined}
             >
               {n}
             </button>
@@ -62,25 +55,24 @@ export function ChipGroup({
   options,
   selected,
   onToggle,
-  color,
 }: {
   options: Array<{ key: string; label: string; color?: string }>;
   selected: string[];
   onToggle: (key: string) => void;
+  /** Barvy z konfigurace se ignorují – vzhled je v celé aplikaci stejný. */
   color?: string;
 }) {
   return (
     <div className="chips">
       {options.map((o) => {
         const active = selected.includes(o.key);
-        const c = o.color ?? color;
         return (
           <button
             key={o.key}
             type="button"
-            className={`chip${active ? ' active' : ''}${c ? '' : ' plain'}`}
+            className={`chip plain${active ? ' active' : ''}`}
+            aria-pressed={active}
             onClick={() => onToggle(o.key)}
-            style={active && c ? { color: c, background: `${c}14` } : undefined}
           >
             {o.label}
           </button>

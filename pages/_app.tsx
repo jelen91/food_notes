@@ -8,7 +8,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
         <title>Zdravotní deník</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#0f766e" />
+        <meta name="theme-color" content="#f6f2ea" />
       </Head>
       <Component {...pageProps} />
     </>

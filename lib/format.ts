@@ -1,41 +1,43 @@
 // Čitelný popis záznamů. Sdílené mezi UI a .md exportem, ať se popisky neliší.
 
-import { CATEGORY_BY_KEY, ENTRY_SYMPTOMS, EventEntry, SCALE_MAX, WeaknessEntry } from './schema';
+import { Entry, entryDef, symptomsFor } from './schema';
+import { FieldDef, TenantConfig } from './tenant/types';
 
-/** Strukturovaná pole události jako text: "délka: 60 min, intenzita: 7/10". */
-export function eventFieldsText(e: EventEntry): string {
-  const def = CATEGORY_BY_KEY[e.category];
+function fieldValueText(f: FieldDef, value: number | string | string[]): string {
+  if (Array.isArray(value)) return value.join(', ');
+  if (f.type === 'scale') return `${value}/${f.max ?? 10}`;
+  const unit = f.unit ? (f.unit.startsWith('/') ? f.unit : ` ${f.unit}`) : '';
+  return `${value}${unit}`;
+}
+
+/** Strukturovaná pole záznamu jako text: "délka: 60 min, intenzita: 7/10". */
+export function entryFieldsText(config: TenantConfig, e: Entry): string {
+  const def = entryDef(config, e);
   const parts: string[] = [];
   for (const f of def?.fields ?? []) {
     const v = e.fields?.[f.key];
-    if (v === undefined || v === null || v === '') continue;
-    const unit = f.unit ? (f.unit.startsWith('/') ? f.unit : ` ${f.unit}`) : '';
-    parts.push(`${f.label.toLowerCase()}: ${v}${unit}`);
+    if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)) continue;
+    parts.push(`${f.label.toLowerCase()}: ${fieldValueText(f, v)}`);
   }
-  for (const s of ENTRY_SYMPTOMS) {
-    const v = e[s.key];
-    if (v) parts.push(`${s.tag.toLowerCase()}: ${v}/5`);
+  if (e.kind === 'event') {
+    for (const s of symptomsFor(config, e.key)) {
+      const v = e.symptoms?.[s.key];
+      if (v) parts.push(`${s.label.toLowerCase()}: ${v}/${s.max ?? 5}`);
+    }
   }
   return parts.join(', ');
 }
 
 /** "ovesná kaše (plyny: 3/5)" */
-export function eventDetail(e: EventEntry): string {
-  const fields = eventFieldsText(e);
+export function entryDetail(config: TenantConfig, e: Entry): string {
+  const fields = entryFieldsText(config, e);
   const note = e.note || '';
   if (!fields) return note;
   return note ? `${note} (${fields})` : `(${fields})`;
 }
 
-/** Souhrn epizody slabosti na jeden řádek. */
-export function weaknessLine(w: WeaknessEntry): string {
-  const parts: string[] = [];
-  if (w.severity !== undefined) parts.push(`intenzita ${w.severity}/${SCALE_MAX}`);
-  if (w.durationMin !== undefined) parts.push(`trvání ${w.durationMin} min`);
-  if (w.bodyParts?.length) parts.push(`kde: ${w.bodyParts.join(', ')}`);
-  if (w.triggers?.length) parts.push(`spouštěč: ${w.triggers.join(', ')}`);
-  if (w.symptoms?.length) parts.push(`doprovodné: ${w.symptoms.join(', ')}`);
-  if (w.lastMealHoursAgo !== undefined) parts.push(`poslední jídlo před ${w.lastMealHoursAgo} h`);
-  if (w.relief?.length) parts.push(`pomohlo: ${w.relief.join(', ')}`);
-  return parts.join(' · ');
+export function entryLabel(config: TenantConfig, e: Entry): string {
+  const def = entryDef(config, e);
+  if (!def) return e.key;
+  return `${def.emoji ? `${def.emoji} ` : ''}${def.label}`;
 }

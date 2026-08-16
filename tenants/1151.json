@@ -1,0 +1,73 @@
+{
+  "id": "1151",
+  "slug": "hv3ktp9r",
+  "customer": "Ukázkový zákazník – hydratace a energie",
+  "title": "Můj deník",
+  "subtitle": "Denní zápisky a přehled",
+  "theme": { "brand": "#2563eb", "brandDark": "#1d4ed8", "accent": "#0891b2" },
+  "modules": { "health": true, "labs": false, "export": true, "history": true },
+  "scales": [
+    { "key": "energy", "label": "Energie", "direction": "higherBetter", "hint": "1 = vyčerpaný, 10 = plná energie" },
+    { "key": "fatigue", "label": "Únava", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" },
+    { "key": "mood", "label": "Nálada", "direction": "higherBetter", "hint": "1 = velmi špatná, 10 = výborná" },
+    { "key": "sleepQuality", "label": "Kvalita spánku", "direction": "higherBetter", "hint": "1 = vůbec jsem se nevyspal, 10 = perfektní" },
+    { "key": "headache", "label": "Bolest hlavy", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" }
+  ],
+  "dailyMetrics": [
+    { "key": "water", "label": "Vypitá voda", "unit": "l", "step": 0.25, "min": 0, "max": 10, "quickAdd": [0.25, 0.5], "hint": "Sklenice ≈ 0,25 l" },
+    { "key": "coffee", "label": "Káva", "unit": "ks", "step": 1, "min": 0, "max": 20, "quickAdd": [1] }
+  ],
+  "categories": [
+    { "key": "jidlo", "label": "Jídlo", "emoji": "🍽️", "color": "#16a34a", "placeholder": "Co jsi jedl?" },
+    {
+      "key": "piti",
+      "label": "Pití",
+      "emoji": "🥤",
+      "color": "#0891b2",
+      "placeholder": "Co jsi pil?",
+      "fields": [{ "key": "amount", "label": "Množství", "type": "number", "unit": "l", "min": 0, "max": 5 }]
+    },
+    {
+      "key": "pohyb",
+      "label": "Pohyb",
+      "emoji": "🏃",
+      "color": "#0f766e",
+      "placeholder": "Jaká aktivita?",
+      "fields": [
+        { "key": "durationMin", "label": "Délka", "type": "number", "unit": "min", "min": 0, "max": 1440 },
+        { "key": "intensity", "label": "Intenzita", "type": "number", "unit": "/10", "min": 1, "max": 10 }
+      ]
+    },
+    {
+      "key": "leky",
+      "label": "Léky",
+      "emoji": "💊",
+      "color": "#dc2626",
+      "placeholder": "Název léku",
+      "fields": [{ "key": "dose", "label": "Dávka", "type": "text", "placeholder": "např. 500 mg" }]
+    },
+    { "key": "poznamka", "label": "Poznámka", "emoji": "📝", "color": "#6b7280", "placeholder": "Cokoli dalšího" }
+  ],
+  "episodes": [
+    {
+      "key": "migrena",
+      "label": "Migréna",
+      "emoji": "⚡",
+      "color": "#7c3aed",
+      "placeholder": "Průběh, co jsi dělal předtím…",
+      "fields": [
+        { "key": "severity", "label": "Intenzita bolesti", "type": "scale", "min": 1, "max": 10, "direction": "higherWorse" },
+        { "key": "durationMin", "label": "Trvání", "type": "number", "unit": "min", "min": 0, "max": 2880 },
+        { "key": "aura", "label": "Aura před bolestí", "type": "select", "options": ["ano", "ne"] },
+        { "key": "triggers", "label": "Možný spouštěč", "type": "multiselect", "options": ["málo spánku", "stres", "málo pití", "hlad", "obrazovka", "počasí", "alkohol", "nevím"] },
+        { "key": "relief", "label": "Co pomohlo", "type": "multiselect", "options": ["lék", "spánek", "tma a klid", "káva", "voda", "nic"] }
+      ]
+    }
+  ],
+  "entrySymptoms": [],
+  "export": {
+    "maxLagDays": 14,
+    "focus": "Hlavní otázka: souvislost mezi pitným režimem, spánkem a migrénami."
+  },
+  "notes": "2026-08-06: založeno. Zákazník chce sledovat hlavně kolik denně vypije a jestli to souvisí s migrénami."
+}

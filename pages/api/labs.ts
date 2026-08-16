@@ -1,97 +1,83 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Binary } from 'mongodb';
-import { getDb, LABS } from '../../lib/db';
+import { requireTenant, requireWrite } from '../../lib/apiAuth';
+import { audit, deleteLab, getLab, getLabPdf, listLabs, saveLab } from '../../lib/store';
 import { isValidDate, normalizeLabMeta, normalizeLabValues } from '../../lib/schema';
 
-// PDF laboratorních zpráv posíláme jako base64 v JSON. Vercel má strop ~4.5 MB na request,
-// což po base64 overheadu znamená ~3 MB PDF – pro běžné lab reporty stačí.
+// PDF laboratorních zpráv chodí jako base64 v JSON. Vercel má strop ~4.5 MB na request.
 export const config = {
   api: {
     bodyParser: { sizeLimit: '8mb' },
   },
 };
 
-function toPublic(d: any) {
-  return {
-    date: d.date,
-    meta: d.meta ?? {},
-    values: d.values ?? [],
-    filename: d.filename ?? null,
-    size: d.size ?? null,
-    uploadedAt: d.uploadedAt ?? null,
-    hasPdf: Boolean(d.filename),
-  };
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const col = (await getDb()).collection(LABS);
+    const ctx = await requireTenant(req, res);
+    if (!ctx) return;
+    const tenantId = ctx.config.id;
+    const dek = ctx.dek;
+
+    if (ctx.config.modules?.labs === false) {
+      return res.status(404).json({ error: 'Modul laboratoří není pro tuto aplikaci zapnutý.' });
+    }
 
     if (req.method === 'GET') {
       const date = String(req.query.date ?? '').trim();
       const download = String(req.query.download ?? '') === '1';
 
       if (date && download) {
-        const doc = await col.findOne({ date });
-        if (!doc?.data) return res.status(404).json({ error: 'Not found.' });
-        const buf = Buffer.from((doc.data as Binary).buffer);
-        res.setHeader('Content-Type', doc.contentType || 'application/pdf');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${encodeURIComponent(doc.filename || `lab-${date}.pdf`)}"`
-        );
-        res.setHeader('Content-Length', String(buf.length));
-        return res.send(buf);
+        if (!isValidDate(date)) return res.status(400).json({ error: 'Date must be YYYY-MM-DD.' });
+        const pdf = await getLabPdf(tenantId, dek, date);
+        if (!pdf) return res.status(404).json({ error: 'Not found.' });
+        res.setHeader('Content-Type', pdf.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(pdf.filename)}"`);
+        res.setHeader('Content-Length', String(pdf.bytes.length));
+        return res.send(pdf.bytes);
       }
 
       if (date) {
-        const doc = await col.findOne({ date }, { projection: { data: 0 } });
-        return res.json(doc ? toPublic(doc) : null);
+        if (!isValidDate(date)) return res.status(400).json({ error: 'Date must be YYYY-MM-DD.' });
+        return res.json(await getLab(tenantId, dek, date));
       }
 
-      const all = await col.find({}, { projection: { data: 0 } }).sort({ date: -1 }).toArray();
-      return res.json(all.map(toPublic));
+      return res.json(await listLabs(tenantId, dek));
     }
 
     if (req.method === 'POST') {
+      if (!requireWrite(ctx, res)) return;
       const { date, meta, values, filename, contentBase64, contentType } = (req.body ?? {}) as Record<string, any>;
       if (!isValidDate(date)) return res.status(400).json({ error: 'Date must be YYYY-MM-DD.' });
 
       const cleanValues = normalizeLabValues(values);
       const cleanMeta = normalizeLabMeta(meta);
-      const set: Record<string, unknown> = { meta: cleanMeta, values: cleanValues, updatedAt: new Date() };
 
-      // PDF je volitelné – když nepřijde, zůstane to, co už je uložené.
+      let pdf: { filename: string; contentType: string; bytes: Buffer } | undefined;
       if (typeof contentBase64 === 'string' && contentBase64.length > 0) {
-        const buf = Buffer.from(contentBase64, 'base64');
-        if (!buf.length) return res.status(400).json({ error: 'Empty file.' });
-        set.data = new Binary(buf);
-        set.size = buf.length;
-        set.filename = String(filename || `lab-${date}.pdf`).slice(0, 200);
-        set.contentType = contentType || 'application/pdf';
-        set.uploadedAt = new Date();
+        const bytes = Buffer.from(contentBase64, 'base64');
+        if (!bytes.length) return res.status(400).json({ error: 'Empty file.' });
+        pdf = {
+          bytes,
+          filename: String(filename || `lab-${date}.pdf`).slice(0, 200),
+          contentType: contentType || 'application/pdf',
+        };
       }
 
-      if (!cleanValues.length && !set.data) {
-        const existing = await col.findOne({ date }, { projection: { data: 0 } });
-        if (!existing) {
-          return res.status(400).json({ error: 'Vyplň aspoň jednu hodnotu nebo nahraj PDF.' });
-        }
+      if (!cleanValues.length && !pdf) {
+        const existing = await getLab(tenantId, dek, date);
+        if (!existing) return res.status(400).json({ error: 'Vyplň aspoň jednu hodnotu nebo nahraj PDF.' });
       }
 
-      await col.updateOne({ date }, { $set: set }, { upsert: true });
-      return res.json({ success: true, date, values: cleanValues.length, hasPdf: Boolean(set.data) });
+      await saveLab(tenantId, dek, date, { meta: cleanMeta, values: cleanValues, pdf });
+      return res.json({ success: true, date, values: cleanValues.length, hasPdf: Boolean(pdf) });
     }
 
     if (req.method === 'DELETE') {
+      if (!requireWrite(ctx, res)) return;
       const date = String(req.query.date ?? '').trim();
       if (!isValidDate(date)) return res.status(400).json({ error: 'Date (YYYY-MM-DD) is required.' });
-      if (String(req.query.pdfOnly ?? '') === '1') {
-        await col.updateOne({ date }, { $unset: { data: '', filename: '', size: '', contentType: '', uploadedAt: '' } });
-        return res.json({ success: true, date, removed: 'pdf' });
-      }
-      await col.deleteOne({ date });
-      return res.json({ success: true, date, removed: 'all' });
+      await deleteLab(tenantId, date);
+      await audit(tenantId, 'lab.delete', { date });
+      return res.json({ success: true, date });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

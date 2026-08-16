@@ -1,82 +1,161 @@
-# Zdravotní deník
+# Zdravotní deník — platforma pro aplikace na míru
 
-Mobilní aplikace pro sledování zdraví: časované události, denní subjektivní škály, epizody slabosti,
-automatický import všech metrik z Apple Health a laboratorní výsledky. Všechno jde vyexportovat
-do jednoho Markdown souboru navrženého tak, aby v něm AI dokázala hledat dlouhodobé souvislosti.
+Jeden engine, ze kterého se dá postavit deník na míru pro každého zákazníka. Zákazník dostane
+vlastní odkaz `/t/<slug>` a heslo, jeho data jsou v databázi zašifrovaná vlastním klíčem.
 
-Data jsou v MongoDB, aplikace běží na Next.js (pages router) a je určená pro jednoho uživatele
-chráněného heslem.
+Zákazníci vznikají dvěma cestami:
 
-## Co appka umí
+- **samoobslužně** — registrace na `/app/registrace`, platba přes Stripe, přístup uděluje ověřený
+  webhook (viz [docs/milnik-1.md](docs/milnik-1.md)),
+- **ručně** — CLI `scripts/tenant.js` a konfigurace v `tenants/<id>.json` (níže).
 
-**Denní subjektivní škály (1–10)** — energie, únava, slabost, stres, nálada, regenerace, brain fog,
-bolest svalů, bolest hlavy, bolest krku. U každé škály je uložený i směr (vyšší = lépe / hůř), takže
-analýza ví, jak hodnoty interpretovat. Ukládá se hned po kliknutí.
+Popis dat, šifrování a externích zpracovatelů je v [docs/architektura.md](docs/architektura.md).
+Samoobslužný tok po částech: [milník 1](docs/milnik-1.md) (účty a platby),
+[milník 2](docs/milnik-2.md) (dotazník a generování deníku přes Claude),
+[milník 3](docs/milnik-3.md) (zápis do deníku, export a mazání účtu).
 
-**Časované události v kategoriích** — trénink, jídlo, kofein, alkohol, léky, doplňky, stres, nemoc,
-práce, cestování, poznámka. Kategorie mají strukturovaná pole (délka a intenzita tréninku, mg kofeinu,
-počet nápojů, dávka léku, teplota u nemoci). U jídla lze navíc hodnotit trávicí symptomy 1–5.
+**Klíčový princip: aplikace na míru není fork kódu, ale konfigurační soubor.** Podoba deníku
+(škály, denní údaje, kategorie událostí, strukturované epizody, moduly) je popsaná v
+`tenants/<id>.json`. Když zákazník něco chce, upraví se JSON — ne komponenty.
 
-**Epizoda slabosti** — samostatný typ záznamu se strukturovanými poli: čas, intenzita 1–10, trvání,
-hodiny od posledního jídla, zasažené části těla, spouštěč, doprovodné příznaky a co pomohlo.
+## Jak vypadá běžná práce
 
-**Apple Health** — ukládá se automaticky vše, co pošle aplikace Health Auto Export, včetně metrik,
-které appka nezná (uloží se pod odvozeným klíčem i s jednotkou). Kumulativní metriky se přes den
-sčítají, ostatní průměrují, min/max se drží zvlášť. Importují se i tréninky z hodinek.
+**Založení zákazníka**
 
-**Laboratorní výsledky** — jednotlivé analyty s jednotkou a referenčním rozmezím (hodnoty mimo
-rozmezí se automaticky označí), metadata odběru (čas, nalačno, laboratoř, důvod, kontext, medikace)
-a volitelně původní PDF. Hodnoty jde nakopírovat hromadně z laboratorní zprávy.
+```bash
+node scripts/tenant.js create 1151 --name "Jan Novák" --from roman
+```
 
-**Export pro AI** — `/api/export` složí Markdown se zadáním pro analýzu, legendou datového modelu,
-CSV tabulkami (denní škály, Apple Health, události, epizody slabosti, laboratoře), denními zápisy
-a poznámkami o limitech dat. Zadání cílí na hledání korelací s časovým posunem 0–14 dní, vyžaduje
-uvádět `n` a nejistotu a explicitně zakazuje stanovovat diagnózu.
+Vypíše URL, heslo a klíč pro Health Auto Export (jinde už se v čitelné podobě neobjeví).
+Konfiguraci vytvoří v `tenants/1151.json` podle vzoru `roman` (nebo bez `--from` z minimální šablony).
+
+**Změna na přání zákazníka**
+
+> „U zákazníka 1151 přidej sledování, kolik denně vypije.“
+
+```json
+"dailyMetrics": [
+  { "key": "water", "label": "Vypitá voda", "unit": "l", "step": 0.25,
+    "min": 0, "max": 10, "quickAdd": [0.25, 0.5], "hint": "Sklenice ≈ 0,25 l" }
+]
+```
+
+Commit + deploy. Metrika se objeví v appce, v CSV exportu (`water_l`) i v legendě pro AI.
+Historická data zůstávají platná — chybějící dny jsou prostě prázdné.
+
+**Ostatní příkazy**
+
+```bash
+node scripts/tenant.js list                 # přehled zákazníků, stav klíčů, počty dat
+node scripts/tenant.js info 1151            # detail jednoho
+node scripts/tenant.js provision 1151       # dogeneruje klíč a heslo (nové prostředí, obnova)
+node scripts/tenant.js passwd 1151          # nové heslo
+node scripts/tenant.js healthkey 1151       # nový klíč pro Health Auto Export
+node scripts/tenant.js delete 1151 --yes    # smaže data i klíč (nevratné)
+```
+
+## Co jde nakonfigurovat
+
+| Sekce | K čemu je |
+| --- | --- |
+| `scales` | denní subjektivní škály s rozsahem a směrem (`higherBetter` / `higherWorse`) |
+| `dailyMetrics` | denní čísla — voda, váha, cigarety; volitelně tlačítka `quickAdd` |
+| `categories` | kategorie časovaných událostí a jejich pole |
+| `episodes` | strukturované epizody (epizoda slabosti, migréna, záchvat…) |
+| `entrySymptoms` | symptom 1–N navázaný na událost, volitelně jen u vybraných kategorií |
+| `modules` | zapnutí/vypnutí Apple Health, laboratoří, exportu, historie |
+| `theme`, `title`, `subtitle` | vzhled a názvosloví |
+| `defaultCategory` | kam spadnou záznamy bez kategorie (historická data) |
+| `export.focus`, `export.caveats` | doplní zadání pro AI o kontext konkrétního zákazníka |
+
+Typy polí: `number`, `text`, `scale`, `select`, `multiselect`. Konfigurace se při načtení validuje;
+neplatný soubor se přeskočí a chyba se vypíše do logu, takže překlep neshodí ostatní zákazníky.
+
+## Bezpečnost a soukromí
+
+- **Envelope šifrování.** Každý zákazník má datový klíč (DEK), kterým se šifruje obsah dnů,
+  laboratorních výsledků i PDF. DEK leží v databázi zabalený master klíčem z `MASTER_KEY`.
+  V čistém zůstává jen `tenantId`, `date` a časová razítka — podle nich se dotazuje.
+- **Únik databáze** sám o sobě data neodhalí (bez `MASTER_KEY` jsou nečitelná).
+- **Smazání zákazníka** zahodí i jeho DEK, takže zbytky v zálohách jsou trvale nečitelné.
+- **Izolace.** Veškerý přístup jde přes `lib/store.ts`, kde má každý dotaz `tenantId` jako první
+  parametr. Cookie je pojmenovaná per zákazník (`hj_<slug>`) a nese slug, takže session z jedné
+  aplikace neotevře jinou. Ověřuje to middleware i každá API routa zvlášť.
+- **Hesla** se ukládají jako scrypt hash se solí; po 10 neúspěších se účet na 15 minut zamkne.
+- **Audit** zaznamenává přihlášení a mazání dat (`audit_log`).
+
+> **`MASTER_KEY` je jediný kritický secret.** Bez něj nejdou data přečíst — ani tobě. Ulož si ho
+> mimo repozitář i mimo Vercel (password manager) a nikdy ho neměň bez přešifrování DEKů.
+
+### Právní minimum (než přijde první platící zákazník)
+
+Zdravotní údaje jsou podle GDPR zvláštní kategorie (čl. 9), takže samotné šifrování nestačí:
+
+- výslovný souhlas se zpracováním zdravotních údajů (ne jen obchodní podmínky),
+- zpracovatelská smlouva se zákazníkem, pokud data zpracováváš pro něj,
+- záznamy o činnostech zpracování a doba uchování,
+- postup při úniku dat (ohlášení do 72 hodin),
+- právo na výmaz a na přenositelnost — obojí appka umí (`delete`, `.md` export),
+- databázi i hosting drž v EU (Atlas i Vercel region).
 
 ## Struktura
 
-- `pages/index.tsx` – hlavní obrazovka (škály, přidávání záznamů, časová osa dne, Apple Health, export)
-- `pages/labs.tsx` – laboratorní výsledky (`/blood` přesměrovává sem)
-- `pages/api/notes.ts` – čtení a zápis dne (události + škály)
-- `pages/api/health.ts` – příjem dat z Health Auto Export (`POST` chrání hlavička `x-health-key`)
-- `pages/api/labs.ts` – laboratorní odběry včetně PDF
-- `pages/api/export.ts` – generování Markdown exportu
-- `pages/api/report.ts` – všechna data jako JSON
-- `lib/schema.ts` – škály, kategorie, pole epizody slabosti, validace
-- `lib/health.ts` – parsování a popisky metrik z Apple Health
-- `lib/markdown.ts` – skládání exportu
-- `middleware.ts`, `lib/auth.ts` – přihlášení heslem (HMAC cookie, 90 dní)
+```
+tenants/<id>.json          konfigurace aplikace zákazníka (v gitu)
+lib/tenant/                typy a načítání konfigurací
+lib/crypto.ts              envelope šifrování (master key → DEK → data)
+lib/store.ts               jediný přístup k datům, vše scopované tenantId
+lib/session.ts             podepsaná cookie (Edge i Node)
+lib/schema.ts              validace vstupů podle konfigurace
+lib/markdown.ts            export pro AI, taky podle konfigurace
+pages/t/[slug]/            aplikace zákazníka (deník, laboratoře, login)
+pages/api/                 API, každé volání s ?t=<slug>
+scripts/tenant.js          správa zákazníků
+```
 
-Data v MongoDB: kolekce `daily_notes` (den = `date`, `entries`, `scales`, `health`, `healthUnits`,
-`workouts`) a `blood_tests` (odběr = `date`, `meta`, `values`, PDF v `data`).
+Kolekce v MongoDB: `daily_notes`, `blood_tests` (data), `tenants` (zabalené klíče),
+`tenant_users` (účty a hesla), `audit_log`.
+
+## Aplikace očima zákazníka
+
+Denní škály 1–10 · denní čísla · časované události v kategoriích · strukturované epizody ·
+automatický import všeho z Apple Health · laboratorní výsledky s metadaty odběru a PDF ·
+export do Markdownu pro AI analýzu (zadání, legenda, CSV tabulky, denní zápisy, limity dat;
+hledání souvislostí s posunem 0–14 dní, s explicitním zákazem stanovovat diagnózu).
 
 ## Instalace
 
-1. `npm install`
-2. `.env` (nebo `.env.local`):
-   ```env
-   MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/food_notes?retryWrites=true&w=majority
-   APP_PASSWORD=<heslo do aplikace>
-   AUTH_SECRET=<náhodný dlouhý řetězec pro podpis cookie>
-   HEALTH_API_KEY=<klíč pro Health Auto Export>
-   ```
-3. `npm run dev`
+```bash
+npm install
+```
 
-## Health Auto Export
+Proměnné prostředí zkopíruj z [.env.example](.env.example) do `.env` a doplň. Minimum pro běh:
+`MONGODB_URI`, `AUTH_SECRET`, `MASTER_KEY`. Pro platby navíc `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET` a `STRIPE_PRICE_ID`, pro e-maily `RESEND_API_KEY` a `EMAIL_FROM`.
 
-V aplikaci Health Auto Export nastav REST API export:
+Pak `npm run dev` a `node scripts/tenant.js list`.
+
+## Příkazy
+
+```bash
+npm run dev         # vývojový server
+npm test            # Vitest
+npm run typecheck   # tsc --noEmit
+npm run lint
+npm run build
+```
+
+## Health Auto Export (nastavuje se v telefonu zákazníka)
 
 - URL: `https://<doména>/api/health`
-- Metoda: `POST`, formát JSON
-- Header: `x-health-key: <HEALTH_API_KEY>`
-- Vyber libovolné metriky – uloží se všechny, i ty, které appka nezná
+- Metoda `POST`, formát JSON
+- Header: `x-health-key: <klíč zákazníka z CLI>`
+- Metriky libovolné — uloží se všechny, i ty, které appka nezná
 
-Data se ve výchozím stavu slučují (víc automatizací se nepřepisuje). `POST /api/health?replace=1`
-nahradí celý denní snímek.
+Data se slučují; `?replace=1` přepíše celý denní snímek.
 
 ## Deployment na Vercel
 
-1. Pushni kód na GitHub
-2. Připoj projekt na Vercel a přidej environment variables (`MONGODB_URI`, `APP_PASSWORD`,
-   `AUTH_SECRET`, `HEALTH_API_KEY`)
-3. Deploy
+1. Push na GitHub
+2. Environment variables: `MONGODB_URI`, `AUTH_SECRET`, `MASTER_KEY`, `APP_URL`
+3. Deploy — nový zákazník se pak nasazuje commitem konfigurace

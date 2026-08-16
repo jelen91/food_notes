@@ -1,408 +1,241 @@
-import { useEffect, useState } from 'react';
+import fs from 'fs';
+import path from 'path';
+import Head from 'next/head';
 import Link from 'next/link';
-import EntryEditor, { emptyEvent, emptyWeakness } from '../components/EntryEditor';
-import { Msg, Scale } from '../components/ui';
-import { eventFieldsText, weaknessLine } from '../lib/format';
-import { healthRows } from '../lib/health';
-import {
-  CATEGORY_BY_KEY,
-  DAILY_SCALES,
-  DayDoc,
-  Entry,
-  EventEntry,
-  SCALE_MAX,
-  WeaknessEntry,
-} from '../lib/schema';
+import type { GetServerSideProps } from 'next';
 
-const WEAKNESS_COLOR = '#be123c';
-
-function todayIso() {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+interface Props {
+  /** Cesta k videu, pokud je nahrané v public/video/. */
+  videoSrc: string | null;
+  poster: string | null;
+  /** Kam pokračuje ten, kdo už je rozjetý (přihlášený účet nebo rozepsaný dotazník). */
+  pokracovat: { href: string; label: string } | null;
 }
 
-function nowHm() {
-  return new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-}
-
-function shiftDate(date: string, days: number) {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Jeden záznam v časové ose dne – zobrazení nebo inline editace. */
-function EntryCard({
-  entry,
-  onSave,
-  onDelete,
-}: {
-  entry: Entry;
-  onSave: (e: Entry) => Promise<void>;
-  onDelete: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const weakness = entry.type === 'weakness';
-  const category = weakness ? undefined : CATEGORY_BY_KEY[(entry as EventEntry).category];
-  const color = weakness ? WEAKNESS_COLOR : category?.color ?? '#6b7280';
-
-  if (editing) {
-    return (
-      <div className="entry" style={{ borderLeftColor: color, background: '#fff' }}>
-        <EntryEditor
-          initial={entry}
-          submitLabel="Uložit změny"
-          onCancel={() => setEditing(false)}
-          onSave={async (e) => {
-            await onSave(e);
-            setEditing(false);
-          }}
+// Úvodní stránka. Vysvětluje, komu je to určené (lidem, kterým dosud nic nepomohlo),
+// a ukazuje produkt na ukázce zápisu místo výčtu funkcí.
+export default function Landing({ videoSrc, poster, pokracovat }: Props) {
+  const cta = pokracovat ?? { href: '/dotaznik', label: 'Sestavit můj deník' };
+  return (
+    <div className="lp">
+      <Head>
+        <title>Deník pozorování — když dosud nic nepomohlo</title>
+        <meta
+          name="description"
+          content="Systematicky si zapisujte, jak se máte. Data pak necháte vyhodnotit AI, která v nich hledá souvislosti napříč týdny."
         />
+        <meta name="theme-color" content="#f6f2ea" />
+      </Head>
+
+      <div className="lp-wrap">
+        <header className="lp-top">
+          <Link className="lp-mark" href="/">
+            Deník pozorování
+          </Link>
+          {pokracovat ? (
+            <Link className="lp-login" href={pokracovat.href}>
+              {pokracovat.label}
+            </Link>
+          ) : (
+            <Link className="lp-login" href="/app/prihlaseni">
+              Přihlásit se
+            </Link>
+          )}
+        </header>
+
+        <section className="lp-hero">
+          <p className="lp-kicker">Když dosud nic nepomohlo</p>
+          <h1>
+            Roky vám nikdo neřekl proč.
+            <br />
+            Zkuste to <em>daty</em>.
+          </h1>
+          <p className="lp-lead">
+            Únava, bolesti, trávení, výkyvy — potíže, na které vyšetření nic nenašla. Chybí u nich
+            obvykle jedno: souvislá řada pozorování v čase. Deset minut v ordinaci ji nenahradí,
+            protože souvislost bývá vidět až po týdnech a s odstupem několika dní.
+          </p>
+          <p className="lp-lead">
+            Zapisujte si pár vět denně. Až toho bude dost, stáhnete si všechno jedním klikem a
+            necháte to vyhodnotit AI, která hledá opakující se vzorce — mezi tím, co jíte, jak
+            spíte, co berete a jak se pak cítíte. <strong>Tohle před pár lety nešlo.</strong> Dnes
+            to zvládne kdokoli za pár minut denně.
+          </p>
+
+          <div className="lp-cta">
+            <Link className="lp-btn" href={cta.href}>
+              {cta.label}
+            </Link>
+            {!pokracovat && <span className="lp-note">Pár otázek. Zaplatíte, až uvidíte, co vznikne.</span>}
+          </div>
+        </section>
+
+        <section aria-label="Video s vysvětlením">
+          {videoSrc ? (
+            <div className="lp-video">
+              <video controls preload="metadata" playsInline poster={poster ?? undefined}>
+                <source src={videoSrc} />
+                Váš prohlížeč neumí přehrát video.
+              </video>
+            </div>
+          ) : (
+            <div className="lp-video">
+              <div className="lp-video-empty">
+                Sem přijde video. Nahraj soubor do <code>public/video/uvod.mp4</code> a objeví se tady.
+              </div>
+            </div>
+          )}
+          <p className="lp-caption">Za dvě minuty vysvětlím, jak to funguje a proč to dává smysl.</p>
+        </section>
+
+        <section className="lp-personal">
+          <p>
+            Tenhle deník jsem si původně napsal pro sebe. Měl jsem potíže, se kterými si roky nikdo
+            nevěděl rady — a teprve když jsem si začal poctivě zapisovat, co jím, jak spím a jak se
+            pak cítím, začaly být vidět souvislosti, na které bych sám nepřišel.
+          </p>
+          <p>
+            Pomohlo to mně a pak i lidem kolem mě. Nic to negarantuje a diagnózu to nenahradí. Ale
+            když vám dosud nikdo nepomohl, sbírat data je nejlepší směr, který znám.
+          </p>
+          <p className="lp-sign">— Roman</p>
+        </section>
+
+        <section className="lp-sample" aria-label="Ukázka zápisu">
+          <div className="lp-sample-head">
+            <span>úterý 12. srpna</span>
+            <span>Záznam</span>
+          </div>
+
+          <div className="lp-line">
+            <span className="lp-time">07:40</span>
+            <span>Špatně jsem se vyspal, budil jsem se okolo třetí.</span>
+          </div>
+          <div className="lp-line">
+            <span className="lp-time">12:15</span>
+            <span>Oběd — těstoviny, po nich těžká hlava.</span>
+          </div>
+          <div className="lp-line">
+            <span className="lp-time">15:00</span>
+            <span>Zase ten útlum, tentokrát slabší než včera.</span>
+          </div>
+
+          <div className="lp-scale">
+            <b>Energie</b>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <span key={n} className={`lp-dot${n === 4 ? ' on' : ''}`}>
+                {n}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="lp-steps">
+          <div className="lp-step">
+            <span>1</span>
+            <h3>Řeknete, co chcete zjistit</h3>
+            <p>Krátký dotazník. Třeba „proč mám odpoledne útlum“ nebo „co spouští migrény“. Bez registrace.</p>
+          </div>
+          <div className="lp-step">
+            <span>2</span>
+            <h3>Deník vznikne na míru</h3>
+            <p>
+              Jen pole, která k vaší otázce dávají smysl — obvykle pět. Uvidíte, co vznikne, a
+              teprve pak se rozhodnete zaplatit.
+            </p>
+          </div>
+          <div className="lp-step">
+            <span>3</span>
+            <h3>Data necháte vyhodnotit</h3>
+            <p>
+              Kdykoli si stáhnete celý deník jako dokument připravený pro AI. Ta v něm hledá
+              opakující se vzorce a časové souvislosti — a vy máte konečně co ukázat lékaři.
+            </p>
+          </div>
+        </section>
+
+        <div className="lp-boundary">
+          <p>
+            Deník neurčuje diagnózu, nedoporučuje léčbu a nenahrazuje lékařské vyšetření. Zapisujete
+            si vlastní pozorování a sami rozhodujete, komu je ukážete. Vyhodnocení dat je podklad
+            k přemýšlení a k rozhovoru s odborníkem, ne lékařský závěr.
+          </p>
+        </div>
+
+        <section className="lp-end">
+          <h2>Nejtěžší je začít si všímat.</h2>
+          <p className="lp-lead" style={{ marginTop: 6 }}>
+            Zbytek už je jen pár vět denně.
+          </p>
+          <div className="lp-cta">
+            <Link className="lp-btn" href={cta.href}>
+              {cta.label}
+            </Link>
+            {!pokracovat && (
+              <Link className="lp-login" href="/app/prihlaseni">
+                Už mám účet
+              </Link>
+            )}
+          </div>
+        </section>
+
+        <footer className="lp-foot">
+          <span>Deník pozorování</span>
+          <span>Data jsou uložená zašifrovaně. Kdykoli je smažete.</span>
+        </footer>
       </div>
-    );
+    </div>
+  );
+}
+
+/**
+ * Kdo už je rozjetý, nemá na úvodní stránce vidět „Přihlásit se“ a „Sestavit deník“.
+ * Nepřihlášený návštěvník bez rozepsaného dotazníku tímhle neplatí ani jeden dotaz do databáze.
+ */
+async function kdePokracovat(cookies: Record<string, string>): Promise<Props['pokracovat']> {
+  const { ACCOUNT_COOKIE, verifyAccountSession } = await import('../lib/session');
+  const session = await verifyAccountSession(process.env.AUTH_SECRET || '', cookies[ACCOUNT_COOKIE]);
+
+  if (session) {
+    const { findAccountById } = await import('../lib/accounts');
+    const { getEntitlement, hasAccess } = await import('../lib/billing');
+    const { nextStepPath } = await import('../lib/onboarding');
+    const account = await findAccountById(session.a);
+    if (account && account.status !== 'deleted') {
+      const access = hasAccess(await getEntitlement(account.accountId));
+      const href = nextStepPath(account.onboarding, access, account.slug);
+      return { href, label: access ? 'Můj deník' : 'Dokončit objednávku' };
+    }
   }
 
-  const detail = weakness ? weaknessLine(entry as WeaknessEntry) : eventFieldsText(entry as EventEntry);
-
-  return (
-    <div className="entry" style={{ borderLeftColor: color }}>
-      <div className="entry-head">
-        <div style={{ minWidth: 0 }}>
-          <span className="entry-time">{entry.time || '--:--'}</span>{' '}
-          <span className="entry-cat" style={{ color }}>
-            {weakness ? '🚨 Epizoda slabosti' : `${category?.emoji ?? ''} ${category?.label ?? ''}`}
-          </span>
-          {weakness && (entry as WeaknessEntry).severity !== undefined && (
-            <span className="tag" style={{ background: '#fee2e2', color: WEAKNESS_COLOR }}>
-              {(entry as WeaknessEntry).severity}/{SCALE_MAX}
-            </span>
-          )}
-          {weakness ? (
-            <>
-              {detail && <div className="entry-meta">{detail}</div>}
-              {entry.note && <div className="entry-note">{entry.note}</div>}
-            </>
-          ) : (
-            <>
-              {entry.note && <div className="entry-note">{entry.note}</div>}
-              {detail && <div className="entry-meta">{detail}</div>}
-            </>
-          )}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>
-            Upravit
-          </button>
-          <button className="btn btn-sm btn-danger" onClick={onDelete}>
-            Smazat
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const { DRAFT_COOKIE, draftIdFromCookie, getDraft } = await import('../lib/drafts');
+  const draft = await getDraft(draftIdFromCookie(cookies[DRAFT_COOKIE]));
+  if (draft && !draft.accountId) {
+    return draft.submittedAt
+      ? { href: '/app/platba', label: 'Zpřístupnit deník' }
+      : { href: '/dotaznik', label: 'Dokončit dotazník' };
+  }
+  return null;
 }
 
-export default function Home() {
-  const [date, setDate] = useState('');
-  const [day, setDay] = useState<DayDoc | null>(null);
-  const [addType, setAddType] = useState<'event' | 'weakness'>('event');
-  const [draftKey, setDraftKey] = useState(0);
-  const [message, setMessage] = useState('');
-  const [isError, setIsError] = useState(false);
-  const [history, setHistory] = useState<DayDoc[] | null>(null);
-  const [loading, setLoading] = useState(false);
+export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  const slug = process.env.DEFAULT_TENANT_SLUG;
+  if (slug) return { redirect: { destination: `/t/${slug}`, permanent: false }, props: {} as any };
 
-  useEffect(() => {
-    const t = todayIso();
-    setDate(t);
-    loadDay(t);
-  }, []);
+  // Selhání téhle části nesmí shodit úvodní stránku – v nejhorším se ukáže jako nepřihlášenému.
+  const pokracovat = await kdePokracovat(ctx.req.cookies ?? {}).catch(() => null);
 
-  const say = (text: string, error = false) => {
-    setMessage(text);
-    setIsError(error);
-    if (!error) setTimeout(() => setMessage((m) => (m === text ? '' : m)), 2500);
-  };
-
-  const loadDay = async (d: string) => {
-    if (!d) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/notes?date=${d}`);
-      if (!res.ok) throw new Error('Nepodařilo se načíst den.');
-      setDay(await res.json());
-    } catch (err: any) {
-      say(err.message, true);
-    } finally {
-      setLoading(false);
+  // Video stačí nahrát do public/video/ – žádná konfigurace. Bere se první nalezený formát.
+  const dir = path.join(process.cwd(), 'public', 'video');
+  const candidates = ['uvod.mp4', 'uvod.webm', 'uvod.mov'];
+  let videoSrc: string | null = null;
+  for (const name of candidates) {
+    if (fs.existsSync(path.join(dir, name))) {
+      videoSrc = `/video/${name}`;
+      break;
     }
-  };
+  }
+  const poster = fs.existsSync(path.join(dir, 'uvod.jpg')) ? '/video/uvod.jpg' : null;
 
-  const goToDate = (d: string) => {
-    setDate(d);
-    setDay(null);
-    loadDay(d);
-  };
-
-  const persist = async (patch: { entries?: Entry[]; scales?: Record<string, number> }, okMsg: string) => {
-    const previous = day;
-    // Bez načteného dne bychom uložili prázdný seznam přes existující záznamy.
-    if (!previous) {
-      say('Den se ještě načítá, zkus to za okamžik.', true);
-      return;
-    }
-    setDay((prev) => (prev ? { ...prev, ...patch } : prev));
-    try {
-      const res = await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, ...patch }),
-      });
-      if (!res.ok) throw new Error('Uložení selhalo.');
-      const saved = await res.json();
-      // Server normalizuje hodnoty (ořeže rozsahy, seřadí podle času) – vezmeme jeho verzi.
-      setDay((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...(saved.entries ? { entries: saved.entries } : {}),
-              ...(saved.scales ? { scales: saved.scales } : {}),
-            }
-          : prev
-      );
-      say(okMsg);
-    } catch (err: any) {
-      setDay(previous);
-      say(err.message, true);
-    }
-  };
-
-  const entries = day?.entries ?? [];
-  const scales = day?.scales ?? {};
-
-  const addEntry = async (entry: Entry) => {
-    await persist({ entries: [...entries, entry] }, 'Záznam uložen.');
-    setDraftKey((k) => k + 1);
-  };
-
-  const updateEntry = async (entry: Entry) => {
-    await persist({ entries: entries.map((e) => (e.id === entry.id ? entry : e)) }, 'Záznam upraven.');
-  };
-
-  const deleteEntry = async (entry: Entry) => {
-    const label = entry.type === 'weakness' ? 'epizodu slabosti' : `záznam „${entry.note?.slice(0, 40) || entry.time}“`;
-    if (!confirm(`Opravdu smazat ${label}?`)) return;
-    await persist({ entries: entries.filter((e) => e.id !== entry.id) }, 'Smazáno.');
-  };
-
-  const setScale = async (key: string, value: number | undefined) => {
-    const next = { ...scales };
-    if (value === undefined) delete next[key];
-    else next[key] = value;
-    await persist({ scales: next }, 'Škály uloženy.');
-  };
-
-  const loadHistory = async () => {
-    try {
-      const res = await fetch('/api/report');
-      if (!res.ok) throw new Error('Nepodařilo se načíst historii.');
-      const all: DayDoc[] = await res.json();
-      setHistory(all.sort((a, b) => b.date.localeCompare(a.date)));
-    } catch (err: any) {
-      say(err.message, true);
-    }
-  };
-
-  const rows = healthRows(day?.health, day?.healthUnits);
-  const filledScales = DAILY_SCALES.filter((s) => scales[s.key] !== undefined).length;
-  const workouts = day?.workouts ?? [];
-
-  return (
-    <div className="page">
-      <div className="hdr">
-        <button
-          className="hdr-btn right"
-          onClick={async () => {
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/login';
-          }}
-        >
-          Odhlásit
-        </button>
-        <h1>Zdravotní deník</h1>
-        <p>Příznaky, události a data z Apple Health na jednom místě</p>
-      </div>
-
-      <section className="card">
-        <div className="row">
-          <button className="btn btn-ghost" style={{ flex: '0 0 44px' }} onClick={() => goToDate(shiftDate(date, -1))}>
-            ‹
-          </button>
-          <input className="input" type="date" value={date} onChange={(e) => goToDate(e.target.value)} />
-          <button
-            className="btn btn-ghost"
-            style={{ flex: '0 0 44px' }}
-            disabled={date >= todayIso()}
-            onClick={() => goToDate(shiftDate(date, 1))}
-          >
-            ›
-          </button>
-        </div>
-        {date !== todayIso() && (
-          <button className="btn btn-ghost btn-block btn-sm" style={{ marginTop: 8 }} onClick={() => goToDate(todayIso())}>
-            Zpět na dnešek
-          </button>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>
-          Jak ti dnes bylo <span className="count">({filledScales}/{DAILY_SCALES.length})</span>
-        </h2>
-        {DAILY_SCALES.map((s) => (
-          <Scale
-            key={s.key}
-            label={s.label}
-            hint={s.direction === 'higherBetter' ? 'vyšší = lépe' : 'vyšší = hůř'}
-            direction={s.direction}
-            value={scales[s.key]}
-            onChange={(v) => setScale(s.key, v)}
-          />
-        ))}
-        <p className="hint">Vyplňuj ideálně večer za celý den. Ukládá se hned po kliknutí.</p>
-      </section>
-
-      <section className="card">
-        <h2>Přidat záznam</h2>
-        <div className="btns" style={{ marginBottom: 12 }}>
-          <button
-            className={`btn ${addType === 'event' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => {
-              setAddType('event');
-              setDraftKey((k) => k + 1);
-            }}
-          >
-            Událost
-          </button>
-          <button
-            className="btn"
-            style={
-              addType === 'weakness'
-                ? { background: WEAKNESS_COLOR, color: '#fff' }
-                : { background: '#fff', border: '1px solid var(--line)', color: WEAKNESS_COLOR }
-            }
-            onClick={() => {
-              setAddType('weakness');
-              setDraftKey((k) => k + 1);
-            }}
-          >
-            🚨 Epizoda slabosti
-          </button>
-        </div>
-        <EntryEditor
-          key={`${addType}-${draftKey}-${date}`}
-          initial={addType === 'event' ? emptyEvent(nowHm()) : emptyWeakness(nowHm())}
-          submitLabel={addType === 'event' ? '+ Přidat událost' : '+ Zaznamenat epizodu'}
-          onSave={addEntry}
-        />
-        <Msg text={message} error={isError} />
-      </section>
-
-      <section className="card">
-        <h2>
-          Záznamy dne <span className="count">({entries.length})</span>
-        </h2>
-        {loading && !day ? (
-          <p className="muted">Načítám…</p>
-        ) : entries.length === 0 ? (
-          <p className="muted">Zatím nic. Přidej první záznam výš. 👆</p>
-        ) : (
-          entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} onSave={updateEntry} onDelete={() => deleteEntry(entry)} />
-          ))
-        )}
-      </section>
-
-      <section className="card">
-        <h2>
-          ⌚ Apple Health <span className="count">({rows.length} metrik)</span>
-        </h2>
-        {rows.length === 0 ? (
-          <p className="muted">Pro tento den zatím nedorazila žádná data.</p>
-        ) : (
-          <div className="grid2">
-            {rows.map((r) => (
-              <div className="stat" key={r.key}>
-                <div className="k">{r.label}</div>
-                <div className="v">{r.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {workouts.length > 0 && (
-          <>
-            <hr className="divider" />
-            <div className="label">Tréninky z hodinek</div>
-            {workouts.map((w, i) => (
-              <div className="entry-meta" key={i}>
-                <strong>{w.name}</strong>
-                {w.start ? ` · ${w.start}${w.end ? `–${w.end}` : ''}` : ''}
-                {w.durationMin !== undefined ? ` · ${w.durationMin} min` : ''}
-                {w.energyKcal !== undefined ? ` · ${w.energyKcal} kcal` : ''}
-                {w.heartRateAvg !== undefined ? ` · tep ⌀ ${w.heartRateAvg}` : ''}
-              </div>
-            ))}
-          </>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Data a export</h2>
-        <div className="stack">
-          <a className="btn btn-accent btn-block" href="/api/export" download>
-            📥 Stáhnout vše pro AI analýzu (.md)
-          </a>
-          <a className="btn btn-ghost btn-block" href="/api/export?preview=1" target="_blank" rel="noreferrer">
-            👁 Náhled exportu
-          </a>
-          <Link className="btn btn-block" href="/labs" style={{ background: '#be123c', color: '#fff' }}>
-            🩸 Laboratorní výsledky
-          </Link>
-          <button className="btn btn-ghost btn-block" onClick={() => (history ? setHistory(null) : loadHistory())}>
-            {history ? 'Skrýt historii' : '📅 Historie dnů'}
-          </button>
-        </div>
-        <p className="hint">
-          Export obsahuje zadání pro AI, legendu, CSV tabulky i denní zápisy – stačí ho vložit do konverzace a nechat
-          hledat souvislosti s posunem 0–14 dní.
-        </p>
-
-        {history && (
-          <div style={{ marginTop: 12 }}>
-            {history.length === 0 && <p className="muted">Zatím žádné dny.</p>}
-            {history.slice(0, 60).map((d) => {
-              const eps = (d.entries ?? []).filter((e) => e.type === 'weakness').length;
-              const evs = (d.entries ?? []).length - eps;
-              const parts = DAILY_SCALES.filter((s) => d.scales?.[s.key] !== undefined)
-                .slice(0, 3)
-                .map((s) => `${s.label} ${d.scales[s.key]}`);
-              return (
-                <div className="hist" key={d.date} onClick={() => goToDate(d.date)}>
-                  <div>
-                    <div className="d">
-                      {d.date} {eps > 0 && <span className="pill warn">slabost {eps}×</span>}
-                    </div>
-                    <div className="s">
-                      {parts.length ? parts.join(' · ') : 'škály nevyplněné'} · {evs} událostí
-                    </div>
-                  </div>
-                  <span className="btn btn-sm btn-ghost">Otevřít</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
+  return { props: { videoSrc, poster, pokracovat } };
+};

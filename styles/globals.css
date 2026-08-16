@@ -1,17 +1,26 @@
-/* Mobilní first UI zdravotního deníku. Jeden styl pro všechny stránky. */
+/* ---------------------------------------------------------------------------
+   Jeden vizuál pro celou aplikaci: papír a inkoust.
+   Deník má vypadat jako sešit, ne jako dashboard. Barvy, typografie i tvary
+   jsou definované jen tady — stránky používají třídy, ne vlastní hodnoty.
+   --------------------------------------------------------------------------- */
 
 :root {
-  --bg: #f4f6fb;
-  --card: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --brand: #0f766e;
-  --brand-dark: #115e59;
-  --accent: #7c3aed;
-  --danger: #dc2626;
-  --ok: #059669;
-  --warn: #b45309;
+  --paper: #f6f2ea;
+  --card: #fffdf9;
+  --ink: #14130f;
+  --ink-soft: #3a362c;
+  --muted: #6d675b;
+  --rule: #e0d8c8;
+  --rule-soft: #efe9dc;
+  --accent: #a4432c;
+  --accent-soft: #f3e6df;
+  --ok: #4a6b3f;
+  --danger: #9b2c1a;
+
+  --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   color-scheme: light;
 }
 
@@ -23,89 +32,130 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
   font-size: 16px;
+  line-height: 1.6;
   -webkit-text-size-adjust: 100%;
 }
 
 a {
-  color: var(--brand);
+  color: var(--accent);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 .page {
   min-height: 100vh;
-  padding-bottom: 40px;
+  padding-bottom: 48px;
 }
 
+/* Horní pruh se značkou — stejný na úvodní stránce i uvnitř aplikace. */
+.topbar {
+  border-bottom: 1px solid var(--rule);
+}
+
+.topbar-in {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 22px 22px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.mark {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mark::after {
+  content: '';
+  display: block;
+  width: 22px;
+  border-top: 2px solid var(--accent);
+  margin-top: 3px;
+}
+
+/* Sloupec obsahu. Stejná šířka jako text na úvodní stránce. */
+.wrap {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* Název obrazovky — v proudu textu, ne v barevném banneru. */
 .hdr {
-  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
-  color: #fff;
-  padding: 20px 16px;
-  text-align: center;
-  position: relative;
+  padding: 30px 0 4px;
 }
 
 .hdr h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .hdr p {
-  margin: 6px 0 0;
-  font-size: 0.85rem;
-  opacity: 0.9;
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
 .hdr-btn {
-  position: absolute;
-  top: 12px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 6px;
+  padding: 4px 0;
+  background: none;
+  color: var(--muted);
+  border: none;
+  border-bottom: 1px solid var(--rule);
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.86rem;
+  font-family: inherit;
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.hdr-btn.left {
-  left: 12px;
-}
-
-.hdr-btn.right {
-  right: 12px;
+.hdr-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink);
 }
 
 .card {
-  margin: 14px;
+  margin: 16px 0;
   background: var(--card);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-  padding: 16px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 18px;
 }
 
 .card > h2 {
   margin: 0 0 12px;
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-size: 1.15rem;
 }
 
 .card > h2 .count {
+  font-family: var(--sans);
   color: var(--muted);
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 400;
+  font-size: 0.82rem;
 }
 
 .label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--ink-soft);
   margin: 0 0 5px;
 }
 
@@ -113,24 +163,26 @@ a {
 .textarea,
 .select {
   width: 100%;
-  padding: 11px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
   font-size: 0.95rem;
   font-family: inherit;
   background: #fff;
-  color: var(--text);
+  color: var(--ink);
 }
 
 .textarea {
   resize: vertical;
+  line-height: 1.5;
 }
 
 .input:focus,
 .textarea:focus,
 .select:focus {
-  outline: 2px solid rgba(15, 118, 110, 0.35);
-  outline-offset: 1px;
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
 }
 
 .row {
@@ -145,32 +197,37 @@ a {
 }
 
 .stack > * + * {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .btn {
-  padding: 11px 14px;
+  padding: 11px 18px;
   border: 1px solid transparent;
-  border-radius: 9px;
-  font-size: 0.9rem;
-  font-weight: 650;
+  border-radius: 3px;
+  font-size: 0.92rem;
+  font-weight: 600;
   cursor: pointer;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--paper);
+  color: var(--ink);
   font-family: inherit;
   text-decoration: none;
   display: inline-block;
   text-align: center;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-primary {
-  background: var(--brand);
-  color: #fff;
+  background: var(--ink);
+  color: var(--card);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent);
 }
 
 .btn-accent {
@@ -178,15 +235,26 @@ a {
   color: #fff;
 }
 
-.btn-danger {
-  background: var(--danger);
-  color: #fff;
+.btn-ghost {
+  background: var(--card);
+  border-color: var(--rule);
+  color: var(--ink-soft);
 }
 
-.btn-ghost {
-  background: #fff;
-  border-color: var(--line);
-  color: #374151;
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
 }
 
 .btn-block {
@@ -195,9 +263,8 @@ a {
 }
 
 .btn-sm {
-  padding: 6px 10px;
+  padding: 5px 10px;
   font-size: 0.78rem;
-  border-radius: 7px;
 }
 
 .btns {
@@ -217,16 +284,20 @@ a {
 }
 
 .chip {
-  padding: 7px 11px;
+  padding: 7px 12px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #374151;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
   font-family: inherit;
   line-height: 1.2;
+}
+
+.chip:hover {
+  border-color: var(--ink);
 }
 
 .chip.active {
@@ -235,139 +306,159 @@ a {
 }
 
 .chip.plain.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--card);
   box-shadow: none;
 }
 
-/* Škála 1–10 */
+/* Škála — čtvercová tlačítka jako body v ukázce na úvodní stránce. */
 .scale {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .scale-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   gap: 8px;
 }
 
 .scale-head .name {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--ink-soft);
 }
 
 .scale-head .val {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   color: var(--muted);
 }
 
 .scale-btns {
   display: flex;
-  gap: 3px;
+  gap: 4px;
 }
 
 .scale-btns button {
   flex: 1;
   min-width: 0;
-  padding: 8px 0;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #4b5563;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 9px 0;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--muted);
+  border-radius: 3px;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--mono);
+}
+
+.scale-btns button:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.scale-btns button.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--card);
 }
 
 .scale-btns button.clear {
   flex: 0 0 34px;
-  color: #9ca3af;
+  color: var(--muted);
+  font-family: var(--sans);
 }
 
+/* Záznam v časové ose */
 .entry {
-  border: 1px solid var(--line);
-  border-left-width: 4px;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: #fafafa;
+  border-top: 1px solid var(--rule-soft);
+  padding: 12px 0;
+  background: none;
+  border-left: none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+.entry:first-of-type {
+  border-top: none;
 }
 
 .entry-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
 }
 
 .entry-time {
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .entry-cat {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .entry-note {
-  color: #374151;
-  font-size: 0.9rem;
+  color: var(--ink);
+  font-size: 0.95rem;
   white-space: pre-wrap;
   margin-top: 3px;
 }
 
 .entry-meta {
-  margin-top: 5px;
-  font-size: 0.78rem;
-  color: var(--muted);
+  margin-top: 3px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
 }
 
 .tag {
   display: inline-block;
-  background: #fef3c7;
-  color: var(--warn);
-  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 3px;
   padding: 1px 6px;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   margin-left: 6px;
 }
 
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .stat {
-  background: #f9fafb;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 9px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 3px;
+  padding: 10px 12px;
 }
 
 .stat .k {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--muted);
   margin-bottom: 2px;
 }
 
 .stat .v {
-  font-weight: 700;
-  font-size: 0.98rem;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .msg {
-  margin-top: 10px;
-  font-size: 0.82rem;
+  margin-top: 12px;
+  font-size: 0.85rem;
   min-height: 1.1em;
 }
 
@@ -381,20 +472,20 @@ a {
 
 .muted {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   margin: 0;
 }
 
 .hint {
   color: var(--muted);
-  font-size: 0.75rem;
-  margin: 6px 0 0;
+  font-size: 0.82rem;
+  margin: 8px 0 0;
 }
 
 .divider {
   border: none;
-  border-top: 1px solid var(--line);
-  margin: 14px 0;
+  border-top: 1px solid var(--rule-soft);
+  margin: 16px 0;
 }
 
 .hist {
@@ -402,8 +493,8 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
+  padding: 11px 0;
+  border-top: 1px solid var(--rule-soft);
   cursor: pointer;
 }
 
@@ -412,35 +503,35 @@ a {
 }
 
 .hist .d {
-  font-weight: 650;
-  font-size: 0.88rem;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .hist .s {
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
 .pill {
   display: inline-block;
-  padding: 1px 7px;
+  padding: 1px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pill.warn {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .lab-val {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 0;
-  border-top: 1px dashed var(--line);
-  font-size: 0.86rem;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 0.9rem;
 }
 
 .lab-val:first-child {
@@ -452,11 +543,427 @@ a {
 }
 
 .lab-val .low {
-  color: #1d4ed8;
-  font-weight: 700;
+  color: #2c4a7c;
+  font-weight: 600;
 }
 
 .lab-val .high {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   Úvodní stránka. Stejná paleta, jen širší typografie a pár vlastních prvků.
+   --------------------------------------------------------------------------- */
+
+.lp {
+  min-height: 100vh;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.lp-wrap {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.lp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 26px 0 0;
+}
+
+.lp-mark {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.lp-mark::after {
+  content: '';
+  display: block;
+  width: 22px;
+  border-top: 2px solid var(--accent);
+  margin-top: 3px;
+}
+
+.lp-login {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 1px;
+}
+
+.lp-login:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.lp-hero {
+  padding: 58px 0 0;
+}
+
+.lp-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.lp-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5.8vw, 2.9rem);
+  line-height: 1.15;
+}
+
+.lp-hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.lp-lead {
+  margin: 22px 0 0;
+  max-width: 34em;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
+.lp-cta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 32px 0 0;
+}
+
+.lp-btn {
+  display: inline-block;
+  background: var(--ink);
+  color: var(--card);
+  padding: 13px 26px;
+  border-radius: 3px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--sans);
+}
+
+.lp-btn:hover {
+  background: var(--accent);
+}
+
+.lp-note {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-family: var(--sans);
+}
+
+/* Video: 16:9, rám z linky, nic navíc. */
+.lp-video {
+  margin: 48px 0 0;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.lp-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lp-video-empty {
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  border: 1px dashed var(--rule);
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-family: var(--sans);
+  text-align: center;
+  padding: 20px;
+}
+
+.lp-caption {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-family: var(--sans);
+}
+
+/* Ukázka zápisu — linkovaný papír */
+.lp-sample {
+  margin: 48px 0 0;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0 20px 18px;
+  /* Linky nejsou tapeta na pozadí, ale patří k řádkům – jinak by na úzkém
+     displeji, kde se text zalomí, vedly přes písmena. */
+}
+
+.lp-sample-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 16px 0 10px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 12px;
+}
+
+.lp-sample-head span:first-child {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--sans);
+}
+
+.lp-sample-head span:last-child {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--sans);
+}
+
+.lp-line {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.lp-line:first-of-type {
+  border-top: none;
+}
+
+.lp-time {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  /* Čas drží u prvního řádku textu, i když se text zalomí. */
+  line-height: 1.6;
+}
+
+.lp-scale {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+
+.lp-scale b {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-right: 6px;
+  font-family: var(--sans);
+}
+
+.lp-dot {
+  width: 28px;
+  min-width: 24px;
+  height: 28px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.lp-dot.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Kroky s visícími číslicemi */
+.lp-steps {
+  margin: 56px 0 0;
+  border-top: 1px solid var(--rule);
+}
+
+.lp-step {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 4px 12px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.lp-step > span {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.lp-step h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.lp-step p {
+  margin: 0;
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.96rem;
+}
+
+/* Osobní poznámka — vypadá jako vlepený lístek */
+.lp-personal {
+  margin: 48px 0 0;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+}
+
+.lp-personal p {
+  margin: 0 0 12px;
+  font-size: 1.02rem;
+}
+
+.lp-personal p:last-child {
+  margin-bottom: 0;
+}
+
+.lp-sign {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.lp-boundary {
+  margin: 44px 0 0;
+  padding: 18px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+.lp-boundary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-family: var(--sans);
+}
+
+.lp-end {
+  margin: 52px 0 0;
+  padding: 40px 0 0;
+  border-top: 1px solid var(--rule);
+}
+
+.lp-end h2 {
+  margin: 0 0 10px;
+  font-size: 1.7rem;
+}
+
+.lp-foot {
+  margin-top: 52px;
+  padding: 22px 0 44px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-family: var(--sans);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .lp {
+    font-size: 16px;
+  }
+  .lp-hero {
+    padding-top: 44px;
+  }
+  .lp-step {
+    grid-template-columns: 34px 1fr;
+  }
+  .card {
+    margin: 12px 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .lp-sample {
+    padding: 0 14px 16px;
+  }
+  .lp-line {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .lp-scale b {
+    flex: 0 0 100%;
+    margin-bottom: 4px;
+  }
+}
+
+/* Průběh sestavování – mezikrok mezi dotazníkem a platbou. */
+.prubeh {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 0.94rem;
+  color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.prubeh[data-stav='bezi'] {
+  color: var(--ink);
+}
+
+.prubeh[data-stav='hotovo'] {
+  color: var(--ink-soft);
+}
+
+.prubeh-znak {
+  font-family: var(--mono);
+  width: 14px;
+  color: var(--rule);
+}
+
+.prubeh[data-stav='bezi'] .prubeh-znak {
+  color: var(--accent);
+  animation: prubeh-puls 1s ease-in-out infinite;
+}
+
+.prubeh[data-stav='hotovo'] .prubeh-znak {
+  color: var(--ok);
+}
+
+@keyframes prubeh-puls {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* Chybějící povinná odpověď – hlásí se hned u pole, ne až při odeslání. */
+.chyba {
+  margin: 5px 0 0;
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+.input.vadne,
+.textarea.vadne,
+.select.vadne {
+  border-color: var(--danger);
 }

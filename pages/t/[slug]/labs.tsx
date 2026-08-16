@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Field, Msg } from '../components/ui';
-import { parseLabLines } from '../lib/labParse';
-import { LabDoc, LabMeta, LabValue, labFlag } from '../lib/schema';
+import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
+import { TopBar } from '../../../components/AppShell';
+import { Field, Msg } from '../../../components/ui';
+import { parseLabLines } from '../../../lib/labParse';
+import { LabDoc, LabMeta, LabValue, labFlag } from '../../../lib/schema';
+import { getTenantBySlug } from '../../../lib/tenant/registry';
+
+interface Props {
+  slug: string;
+  title: string;
+}
 
 const emptyRow = (): LabValue => ({ name: '', value: '' });
 
@@ -18,7 +27,8 @@ function todayIso() {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-export default function LabsPage() {
+export default function LabsPage({ slug, title }: Props) {
+  const api = (params = '') => `/api/labs?t=${slug}${params}`;
   const [labs, setLabs] = useState<LabDoc[]>([]);
   const [date, setDate] = useState(todayIso());
   const [meta, setMeta] = useState<LabMeta>({});
@@ -37,7 +47,7 @@ export default function LabsPage() {
 
   const loadLabs = async () => {
     try {
-      const res = await fetch('/api/labs');
+      const res = await fetch(api());
       if (!res.ok) throw new Error('Nepodařilo se načíst seznam.');
       setLabs(await res.json());
     } catch (err: any) {
@@ -47,6 +57,8 @@ export default function LabsPage() {
 
   useEffect(() => {
     loadLabs();
+    // Načítá se jednou při otevření stránky; další načtení si vyžádají akce uživatele.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = (d = todayIso()) => {
@@ -118,7 +130,7 @@ export default function LabsPage() {
         body.contentType = file.type || 'application/pdf';
         body.contentBase64 = await readBase64(file);
       }
-      const res = await fetch('/api/labs', {
+      const res = await fetch(api(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -140,7 +152,7 @@ export default function LabsPage() {
   const remove = async (d: string) => {
     if (!confirm(`Smazat celý odběr z ${d} (hodnoty i PDF)?`)) return;
     try {
-      const res = await fetch(`/api/labs?date=${encodeURIComponent(d)}`, { method: 'DELETE' });
+      const res = await fetch(api(`&date=${encodeURIComponent(d)}`), { method: 'DELETE' });
       if (!res.ok) throw new Error('Smazání selhalo.');
       say('Smazáno.');
       await loadLabs();
@@ -151,13 +163,23 @@ export default function LabsPage() {
 
   return (
     <div className="page">
-      <div className="hdr" style={{ background: 'linear-gradient(135deg, #be123c, #9f1239)' }}>
-        <Link className="hdr-btn left" href="/">
-          ← Zpět
-        </Link>
-        <h1>🩸 Laboratoře</h1>
-        <p>Výsledky, metadata odběru a původní PDF</p>
-      </div>
+      <Head>
+        <title>{`Laboratoře – ${title}`}</title>
+      </Head>
+      <TopBar
+        href={`/t/${slug}`}
+        action={
+          <Link className="hdr-btn" href={`/t/${slug}`}>
+            Zpět do deníku
+          </Link>
+        }
+      />
+
+      <div className="wrap">
+        <div className="hdr">
+          <h1>Laboratorní výsledky</h1>
+          <p>Hodnoty, metadata odběru a původní PDF</p>
+        </div>
 
       <section className="card">
         <h2>Nový / upravit odběr</h2>
@@ -355,10 +377,10 @@ export default function LabsPage() {
           <p className="muted">Zatím nic uloženého.</p>
         ) : (
           labs.map((lab) => (
-            <div key={lab.date} style={{ borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 12 }}>
+            <div key={lab.date} style={{ borderTop: '1px solid var(--rule-soft)', paddingTop: 12, marginTop: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#be123c' }}>{lab.date}</div>
+                  <div style={{ fontWeight: 600, color: 'var(--accent)' }}>{lab.date}</div>
                   <div className="s" style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>
                     {[
                       lab.meta?.time,
@@ -375,7 +397,7 @@ export default function LabsPage() {
                     Upravit
                   </button>
                   {lab.filename && (
-                    <a className="btn btn-sm btn-ghost" href={`/api/labs?date=${encodeURIComponent(lab.date)}&download=1`}>
+                    <a className="btn btn-sm btn-ghost" href={api(`&date=${encodeURIComponent(lab.date)}&download=1`)}>
                       PDF {formatSize(lab.size)}
                     </a>
                   )}
@@ -407,6 +429,15 @@ export default function LabsPage() {
           ))
         )}
       </section>
+      </div>
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  const slug = String(ctx.params?.slug ?? '');
+  const config = getTenantBySlug(slug);
+  // Zákazník bez modulu laboratoří stránku vůbec nemá.
+  if (!config || config.modules?.labs === false) return { notFound: true };
+  return { props: { slug: config.slug, title: config.title } };
+};

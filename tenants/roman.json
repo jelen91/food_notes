@@ -1,0 +1,144 @@
+{
+  "id": "roman",
+  "slug": "qm4x7btp",
+  "customer": "Roman (vlastní deník, původní aplikace)",
+  "title": "Zdravotní deník",
+  "subtitle": "Příznaky, události a data z Apple Health na jednom místě",
+  "theme": { "brand": "#0f766e", "brandDark": "#115e59", "accent": "#7c3aed" },
+  "modules": { "health": true, "labs": true, "export": true, "history": true },
+  "scales": [
+    { "key": "energy", "label": "Energie", "direction": "higherBetter", "hint": "1 = vyčerpaný, 10 = plná energie" },
+    { "key": "fatigue", "label": "Únava", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" },
+    { "key": "weakness", "label": "Slabost", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní svalová slabost" },
+    { "key": "stress", "label": "Stres", "direction": "higherWorse", "hint": "1 = klid, 10 = maximální stres" },
+    { "key": "mood", "label": "Nálada", "direction": "higherBetter", "hint": "1 = velmi špatná, 10 = výborná" },
+    { "key": "recovery", "label": "Regenerace", "direction": "higherBetter", "hint": "1 = necítím se zregenerovaný, 10 = plně zotavený" },
+    { "key": "brainFog", "label": "Brain fog", "direction": "higherWorse", "hint": "1 = jasná hlava, 10 = úplná mlha" },
+    { "key": "musclePain", "label": "Bolest svalů", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" },
+    { "key": "headache", "label": "Bolest hlavy", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" },
+    { "key": "neckPain", "label": "Bolest krku", "direction": "higherWorse", "hint": "1 = žádná, 10 = extrémní" }
+  ],
+  "dailyMetrics": [],
+  "defaultCategory": "jidlo",
+  "categories": [
+    {
+      "key": "trenink",
+      "label": "Trénink",
+      "emoji": "🏋️",
+      "color": "#0891b2",
+      "placeholder": "Co za trénink? (např. kolo, silový, běh)",
+      "fields": [
+        { "key": "durationMin", "label": "Délka", "type": "number", "unit": "min", "min": 0, "max": 1440 },
+        { "key": "intensity", "label": "Intenzita", "type": "number", "unit": "/10", "placeholder": "RPE 1–10", "min": 1, "max": 10 }
+      ]
+    },
+    { "key": "jidlo", "label": "Jídlo", "emoji": "🍽️", "color": "#16a34a", "placeholder": "Co jsi jedl/pil?" },
+    {
+      "key": "kofein",
+      "label": "Kofein",
+      "emoji": "☕",
+      "color": "#92400e",
+      "placeholder": "Espresso, čaj, energy drink…",
+      "fields": [{ "key": "amount", "label": "Množství", "type": "number", "unit": "mg", "min": 0, "max": 2000 }]
+    },
+    {
+      "key": "alkohol",
+      "label": "Alkohol",
+      "emoji": "🍺",
+      "color": "#b45309",
+      "placeholder": "Co a kolik?",
+      "fields": [{ "key": "amount", "label": "Počet nápojů", "type": "number", "unit": "ks", "min": 0, "max": 30 }]
+    },
+    {
+      "key": "leky",
+      "label": "Léky",
+      "emoji": "💊",
+      "color": "#dc2626",
+      "placeholder": "Název léku",
+      "fields": [{ "key": "dose", "label": "Dávka", "type": "text", "placeholder": "např. 500 mg" }]
+    },
+    {
+      "key": "doplnky",
+      "label": "Doplňky",
+      "emoji": "🌿",
+      "color": "#059669",
+      "placeholder": "Název doplňku (hořčík, D3, kreatin…)",
+      "fields": [{ "key": "dose", "label": "Dávka", "type": "text", "placeholder": "např. 400 mg" }]
+    },
+    {
+      "key": "stres",
+      "label": "Stres",
+      "emoji": "⚡",
+      "color": "#9333ea",
+      "placeholder": "Co se dělo?",
+      "fields": [{ "key": "intensity", "label": "Intenzita", "type": "number", "unit": "/10", "min": 1, "max": 10 }]
+    },
+    {
+      "key": "nemoc",
+      "label": "Nemoc",
+      "emoji": "🤒",
+      "color": "#e11d48",
+      "placeholder": "Příznaky, teplota, průběh…",
+      "fields": [{ "key": "temperature", "label": "Teplota", "type": "number", "unit": "°C", "min": 34, "max": 43 }]
+    },
+    {
+      "key": "prace",
+      "label": "Práce",
+      "emoji": "💼",
+      "color": "#475569",
+      "placeholder": "Co jsi dělal?",
+      "fields": [{ "key": "durationMin", "label": "Délka", "type": "number", "unit": "min", "min": 0, "max": 1440 }]
+    },
+    {
+      "key": "cestovani",
+      "label": "Cestování",
+      "emoji": "✈️",
+      "color": "#0284c7",
+      "placeholder": "Kam a čím?",
+      "fields": [{ "key": "durationMin", "label": "Délka", "type": "number", "unit": "min", "min": 0, "max": 2880 }]
+    },
+    { "key": "poznamka", "label": "Poznámka", "emoji": "📝", "color": "#6b7280", "placeholder": "Cokoli dalšího" }
+  ],
+  "episodes": [
+    {
+      "key": "slabost",
+      "label": "Epizoda slabosti",
+      "emoji": "🚨",
+      "color": "#be123c",
+      "placeholder": "Jak to probíhalo, co jsi dělal těsně předtím…",
+      "fields": [
+        { "key": "severity", "label": "Intenzita slabosti", "type": "scale", "min": 1, "max": 10, "direction": "higherWorse" },
+        { "key": "durationMin", "label": "Trvání", "type": "number", "unit": "min", "min": 0, "max": 1440 },
+        { "key": "lastMealHoursAgo", "label": "Hodin od posledního jídla", "type": "number", "unit": "h", "min": 0, "max": 48, "placeholder": "např. 4" },
+        { "key": "bodyParts", "label": "Kde se to projevilo", "type": "multiselect", "options": ["nohy", "ruce", "celé tělo", "záda", "krk", "hlava"] },
+        {
+          "key": "triggers",
+          "label": "Co tomu předcházelo",
+          "type": "multiselect",
+          "options": ["po tréninku", "po jídle", "nalačno / hlad", "po probuzení", "stres", "horko", "dlouhé stání", "po alkoholu", "bez zjevné příčiny"]
+        },
+        {
+          "key": "symptoms",
+          "label": "Doprovodné příznaky",
+          "type": "multiselect",
+          "options": ["závrať", "bušení srdce", "třes", "pocení", "nevolnost", "brnění", "dušnost", "mlha v hlavě", "rozmazané vidění", "blízko mdlobě"]
+        },
+        {
+          "key": "relief",
+          "label": "Co pomohlo",
+          "type": "multiselect",
+          "options": ["odpočinek", "jídlo", "cukr", "voda / elektrolyty", "spánek", "odeznělo samo", "nepomohlo nic"]
+        }
+      ]
+    }
+  ],
+  "entrySymptoms": [
+    { "key": "gas", "label": "Plyny", "max": 5, "categories": ["jidlo"] },
+    { "key": "pressure", "label": "Tlak v břiše", "max": 5, "categories": ["jidlo"] }
+  ],
+  "export": {
+    "maxLagDays": 14,
+    "focus": "Hlavní otázka: co předchází epizodám slabosti a zhoršené energii."
+  },
+  "notes": "Původní aplikace (dřív stravovací deník). Historická data z období stravovacího deníku mají kategorii jidlo."
+}

@@ -1,42 +1,35 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getDb, DAYS, LABS } from '../../lib/db';
+import { requireTenant } from '../../lib/apiAuth';
 import { buildMarkdown } from '../../lib/markdown';
-import { DayDoc, LabDoc, normalizeEntries, normalizeScales } from '../../lib/schema';
+import { listDays, listLabs } from '../../lib/store';
+import { normalizeEntries, normalizeMetrics, normalizeScales } from '../../lib/schema';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const db = await getDb();
+    const ctx = await requireTenant(req, res);
+    if (!ctx) return;
+    const { config, dek } = ctx;
+    if (config.modules?.export === false) return res.status(404).json({ error: 'Export není zapnutý.' });
+
     const from = String(req.query.from ?? '').trim();
     const to = String(req.query.to ?? '').trim();
-    const filter: Record<string, unknown> = {};
-    if (from || to) filter.date = { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) };
 
-    const [dayDocs, labDocs] = await Promise.all([
-      db.collection(DAYS).find(filter).sort({ date: 1 }).toArray(),
-      db.collection(LABS).find({}, { projection: { data: 0 } }).sort({ date: 1 }).toArray(),
+    const [rawDays, labs] = await Promise.all([
+      listDays(config.id, dek, { from, to }),
+      config.modules?.labs === false ? Promise.resolve([]) : listLabs(config.id, dek),
     ]);
 
-    const days: DayDoc[] = dayDocs.map((d) => ({
-      date: d.date,
-      entries: normalizeEntries(d.entries),
-      scales: normalizeScales(d.scales),
-      health: d.health ?? null,
-      healthUnits: d.healthUnits ?? null,
-      workouts: d.workouts ?? null,
-    }));
-    const labs: LabDoc[] = labDocs.map((l) => ({
-      date: l.date,
-      meta: l.meta ?? {},
-      values: l.values ?? [],
-      filename: l.filename ?? null,
-      size: l.size ?? null,
-      uploadedAt: l.uploadedAt ?? null,
+    const days = rawDays.map((d) => ({
+      ...d,
+      entries: normalizeEntries(config, d.entries),
+      scales: normalizeScales(config, d.scales),
+      metrics: normalizeMetrics(config, d.metrics),
     }));
 
-    const markdown = buildMarkdown({ days, labs });
-    const filename = `zdravotni-denik-${new Date().toISOString().slice(0, 10)}.md`;
+    const markdown = buildMarkdown({ config, days, labs });
+    const filename = `denik-${new Date().toISOString().slice(0, 10)}.md`;
 
     if (String(req.query.preview ?? '') === '1') {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');

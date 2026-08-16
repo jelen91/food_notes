@@ -1,37 +1,92 @@
 import { useState } from 'react';
-import {
-  CATEGORY_BY_KEY,
-  ENTRY_SYMPTOMS,
-  EVENT_CATEGORIES,
-  Entry,
-  EventEntry,
-  SCALE_MAX,
-  WEAKNESS_OPTIONS,
-  WeaknessEntry,
-  newId,
-} from '../lib/schema';
+import { Entry, entryDef, newId, symptomsFor } from '../lib/schema';
+import { CategoryDef, EpisodeDef, FieldDef, TenantConfig } from '../lib/tenant/types';
 import { ChipGroup, Field, Scale } from './ui';
 
-export function emptyEvent(time: string, category = 'jidlo'): EventEntry {
-  return { id: newId(), type: 'event', time, category, note: '', fields: {} };
+export function emptyEvent(config: TenantConfig, time: string): Entry {
+  return { id: newId(), kind: 'event', key: config.categories?.[0]?.key ?? 'poznamka', time, note: '', fields: {} };
 }
 
-export function emptyWeakness(time: string): WeaknessEntry {
-  return { id: newId(), type: 'weakness', time, bodyParts: [], triggers: [], symptoms: [], relief: [], note: '' };
+export function emptyEpisode(config: TenantConfig, time: string, key?: string): Entry {
+  return { id: newId(), kind: 'episode', key: key ?? config.episodes?.[0]?.key ?? '', time, note: '', fields: {} };
 }
 
-const toOptions = (arr: string[]) => arr.map((x) => ({ key: x, label: x }));
+const toOptions = (arr: string[] = []) => arr.map((x) => ({ key: x, label: x }));
+
+/** Vykreslí jedno pole podle jeho typu v konfiguraci. */
+function FieldInput({
+  def,
+  value,
+  onChange,
+}: {
+  def: FieldDef;
+  value: number | string | string[] | undefined;
+  onChange: (v: number | string | string[] | undefined) => void;
+}) {
+  if (def.type === 'scale') {
+    return (
+      <Scale
+        label={def.label}
+        min={def.min ?? 1}
+        max={def.max ?? 10}
+        direction={def.direction}
+        value={typeof value === 'number' ? value : undefined}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (def.type === 'multiselect' || def.type === 'select') {
+    const selected = Array.isArray(value) ? value : value ? [String(value)] : [];
+    return (
+      <div>
+        <label className="label">{def.label}</label>
+        <ChipGroup
+          options={toOptions(def.options)}
+          selected={selected}
+          onToggle={(key) => {
+            if (def.type === 'select') {
+              onChange(selected.includes(key) ? undefined : key);
+              return;
+            }
+            const next = selected.includes(key) ? selected.filter((x) => x !== key) : [...selected, key];
+            onChange(next.length ? next : undefined);
+          }}
+        />
+      </div>
+    );
+  }
+
+  const unitLabel = def.unit ? ` (${def.unit === '/10' ? '1–10' : def.unit})` : '';
+  return (
+    <Field label={`${def.label}${unitLabel}`}>
+      {/* Čísla držíme jako text, ať jde rozepsat i „3.5“ – dočistí je validace na serveru. */}
+      <input
+        className="input"
+        type={def.type === 'number' ? 'number' : 'text'}
+        inputMode={def.type === 'number' ? 'decimal' : undefined}
+        min={def.min}
+        max={def.max}
+        placeholder={def.placeholder}
+        value={value === undefined || Array.isArray(value) ? '' : String(value)}
+        onChange={(e) => onChange(e.target.value || undefined)}
+      />
+    </Field>
+  );
+}
 
 /**
- * Formulář pro obě podoby záznamu (běžná událost / epizoda slabosti).
- * Používá se stejný jak pro přidání, tak pro editaci existujícího záznamu.
+ * Formulář pro událost i epizodu. Podoba se celá odvozuje z konfigurace zákazníka,
+ * takže přidání pole je změna v tenants/*.json, ne v kódu.
  */
 export default function EntryEditor({
+  config,
   initial,
   onSave,
   onCancel,
   submitLabel,
 }: {
+  config: TenantConfig;
   initial: Entry;
   onSave: (entry: Entry) => void | Promise<void>;
   onCancel?: () => void;
@@ -40,12 +95,25 @@ export default function EntryEditor({
   const [draft, setDraft] = useState<Entry>(initial);
   const [error, setError] = useState('');
 
-  const patch = (p: Partial<Entry>) => setDraft((d) => ({ ...d, ...p } as Entry));
+  const def = entryDef(config, draft) as CategoryDef | EpisodeDef | undefined;
+  const isEvent = draft.kind === 'event';
 
-  const toggleIn = (key: 'bodyParts' | 'triggers' | 'symptoms' | 'relief', value: string) => {
-    const w = draft as WeaknessEntry;
-    const list = w[key] ?? [];
-    patch({ [key]: list.includes(value) ? list.filter((x) => x !== value) : [...list, value] } as any);
+  const setField = (key: string, value: number | string | string[] | undefined) => {
+    setDraft((d) => {
+      const fields = { ...d.fields };
+      if (value === undefined) delete fields[key];
+      else fields[key] = value;
+      return { ...d, fields };
+    });
+  };
+
+  const setSymptom = (key: string, value: number | undefined) => {
+    setDraft((d) => {
+      const symptoms = { ...(d.symptoms ?? {}) };
+      if (value === undefined) delete symptoms[key];
+      else symptoms[key] = value;
+      return { ...d, symptoms };
+    });
   };
 
   const submit = async () => {
@@ -53,137 +121,64 @@ export default function EntryEditor({
       setError('Vyplň čas.');
       return;
     }
-    if (draft.type === 'event') {
-      const e = draft as EventEntry;
-      const hasField = Object.values(e.fields ?? {}).some((v) => v !== '' && v !== undefined);
-      if (!e.note.trim() && !hasField && !e.gas && !e.pressure) {
-        setError('Vyplň popis, hodnotu nebo symptom.');
-        return;
-      }
+    const hasField = Object.values(draft.fields ?? {}).some((v) => v !== '' && v !== undefined);
+    const hasSymptom = Object.values(draft.symptoms ?? {}).some(Boolean);
+    if (isEvent && !draft.note.trim() && !hasField && !hasSymptom) {
+      setError('Vyplň popis, hodnotu nebo symptom.');
+      return;
     }
     setError('');
     await onSave(draft);
   };
 
-  const isEvent = draft.type === 'event';
-  const category = isEvent ? CATEGORY_BY_KEY[(draft as EventEntry).category] : undefined;
-  const showGi = isEvent && ((draft as EventEntry).category === 'jidlo' || (draft as EventEntry).gas || (draft as EventEntry).pressure);
+  const symptoms = isEvent ? symptomsFor(config, draft.key) : [];
 
   return (
     <div className="stack">
-      {isEvent && (
+      {isEvent && (config.categories?.length ?? 0) > 1 && (
         <div>
           <label className="label">Kategorie</label>
           <ChipGroup
-            options={EVENT_CATEGORIES.map((c) => ({ key: c.key, label: `${c.emoji} ${c.label}`, color: c.color }))}
-            selected={[(draft as EventEntry).category]}
-            onToggle={(key) => patch({ category: key, fields: {} } as any)}
+            options={(config.categories ?? []).map((c) => ({
+              key: c.key,
+              label: `${c.emoji ? `${c.emoji} ` : ''}${c.label}`,
+              color: c.color,
+            }))}
+            selected={[draft.key]}
+            onToggle={(key) => setDraft((d) => ({ ...d, key, fields: {}, symptoms: undefined }))}
           />
         </div>
       )}
 
-      <div className="row">
-        <Field label="Čas">
-          <input className="input" type="time" value={draft.time} onChange={(e) => patch({ time: e.target.value })} />
-        </Field>
-        {!isEvent && (
-          <Field label="Trvání (min)">
-            <input
-              className="input"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={(draft as WeaknessEntry).durationMin ?? ''}
-              onChange={(e) => patch({ durationMin: e.target.value || undefined } as any)}
-            />
-          </Field>
-        )}
-      </div>
+      <Field label="Čas">
+        <input className="input" type="time" value={draft.time} onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))} />
+      </Field>
 
-      {isEvent && category && category.fields.length > 0 && (
-        <div className="row">
-          {category.fields.map((f) => (
-            <Field key={f.key} label={`${f.label}${f.unit ? ` (${f.unit.replace('/10', '1–10')})` : ''}`}>
-              <input
-                className="input"
-                type={f.type === 'number' ? 'number' : 'text'}
-                inputMode={f.type === 'number' ? 'decimal' : undefined}
-                min={f.min}
-                max={f.max}
-                placeholder={f.placeholder}
-                value={(draft as EventEntry).fields?.[f.key] ?? ''}
-                onChange={(e) =>
-                  patch({
-                    fields: { ...(draft as EventEntry).fields, [f.key]: e.target.value },
-                  } as any)
-                }
-              />
-            </Field>
-          ))}
-        </div>
-      )}
-
-      {!isEvent && (
-        <>
-          <Scale
-            label="Intenzita slabosti"
-            direction="higherWorse"
-            value={(draft as WeaknessEntry).severity}
-            onChange={(v) => patch({ severity: v } as any)}
-          />
-          {/* Čísla držíme jako text (jde rozepsat „3.5“) – dočistí je až validace na serveru. */}
-          <Field label="Hodin od posledního jídla">
-            <input
-              className="input"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={0.5}
-              placeholder="např. 4"
-              value={(draft as WeaknessEntry).lastMealHoursAgo ?? ''}
-              onChange={(e) => patch({ lastMealHoursAgo: e.target.value || undefined } as any)}
-            />
-          </Field>
-          <div>
-            <label className="label">Kde se to projevilo</label>
-            <ChipGroup options={toOptions(WEAKNESS_OPTIONS.bodyParts)} selected={(draft as WeaknessEntry).bodyParts ?? []} onToggle={(v) => toggleIn('bodyParts', v)} />
-          </div>
-          <div>
-            <label className="label">Co tomu předcházelo</label>
-            <ChipGroup options={toOptions(WEAKNESS_OPTIONS.triggers)} selected={(draft as WeaknessEntry).triggers ?? []} onToggle={(v) => toggleIn('triggers', v)} />
-          </div>
-          <div>
-            <label className="label">Doprovodné příznaky</label>
-            <ChipGroup options={toOptions(WEAKNESS_OPTIONS.symptoms)} selected={(draft as WeaknessEntry).symptoms ?? []} onToggle={(v) => toggleIn('symptoms', v)} />
-          </div>
-          <div>
-            <label className="label">Co pomohlo</label>
-            <ChipGroup options={toOptions(WEAKNESS_OPTIONS.relief)} selected={(draft as WeaknessEntry).relief ?? []} onToggle={(v) => toggleIn('relief', v)} />
-          </div>
-        </>
-      )}
+      {(def?.fields ?? []).map((f) => (
+        <FieldInput key={f.key} def={f} value={draft.fields?.[f.key]} onChange={(v) => setField(f.key, v)} />
+      ))}
 
       <Field label={isEvent ? 'Popis' : 'Poznámka'}>
         <textarea
           className="textarea"
           rows={isEvent ? 2 : 3}
-          placeholder={isEvent ? category?.placeholder : 'Jak to probíhalo, co jsi dělal těsně předtím…'}
+          placeholder={def?.placeholder}
           value={draft.note}
-          onChange={(e) => patch({ note: e.target.value })}
+          onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
         />
       </Field>
 
-      {showGi && (
+      {symptoms.length > 0 && (
         <div>
-          <label className="label">Trávicí symptomy (1 = minimum, 5 = extrém)</label>
-          {ENTRY_SYMPTOMS.map((s) => (
+          <label className="label">Symptomy</label>
+          {symptoms.map((s) => (
             <Scale
               key={s.key}
               label={s.label}
-              max={5}
+              max={s.max ?? 5}
               direction="higherWorse"
-              value={(draft as EventEntry)[s.key]}
-              onChange={(v) => patch({ [s.key]: v } as any)}
+              value={draft.symptoms?.[s.key]}
+              onChange={(v) => setSymptom(s.key, v)}
             />
           ))}
         </div>
