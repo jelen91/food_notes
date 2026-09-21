@@ -3,6 +3,7 @@
 // Renderer nic nevyhodnocuje ani nespouští – jen podle `type` vybere z pevné sady vstupů.
 // Neznámý typ se nevykreslí. Primitiva (Scale, ChipGroup, Field) jsou stejná jako ve zbytku appky.
 
+import { useId } from 'react';
 import { BRISTOL_OPTIONS, FieldValue, fieldRange, isVisible, valueKind } from '../lib/tracker/entry';
 import type { TrackerField, TrackerSection } from '../lib/tracker/schema';
 import { ChipGroup, Field, Scale } from './ui';
@@ -18,12 +19,14 @@ export function TrackerFieldInput({
 }) {
   const kind = valueKind(field.type);
   const label = `${field.label}${field.required ? ' *' : ''}${field.unit ? ` (${field.unit})` : ''}`;
+  const descriptionId = useId();
+  const describedBy = field.description ? descriptionId : undefined;
 
   if (kind === 'boolean') {
     return (
-      <div>
+      <div role="group" aria-label={label} aria-describedby={describedBy}>
         <label className="label">{label}</label>
-        {field.description && <p className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
+        {field.description && <p id={descriptionId} className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
         <ChipGroup
           options={[
             { key: 'ano', label: 'Ano' },
@@ -42,8 +45,8 @@ export function TrackerFieldInput({
   if (field.type === 'scale' || field.type === 'stool_bristol') {
     const { min, max } = fieldRange(field);
     return (
-      <div>
-        {field.description && <p className="hint" style={{ marginBottom: 2 }}>{field.description}</p>}
+      <div role="group" aria-label={label} aria-describedby={describedBy}>
+        {field.description && <p id={descriptionId} className="hint" style={{ marginBottom: 2 }}>{field.description}</p>}
         <Scale
           label={label}
           min={field.type === 'stool_bristol' ? 1 : min}
@@ -62,9 +65,9 @@ export function TrackerFieldInput({
   if (kind === 'choice' || kind === 'choices') {
     const selected = Array.isArray(value) ? value : value === undefined ? [] : [String(value)];
     return (
-      <div>
+      <div role="group" aria-label={label} aria-describedby={describedBy}>
         <label className="label">{label}</label>
-        {field.description && <p className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
+        {field.description && <p id={descriptionId} className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
         <ChipGroup
           options={(field.options ?? []).map((o) => ({ key: o.value, label: o.label }))}
           selected={selected}
@@ -83,13 +86,15 @@ export function TrackerFieldInput({
 
   const common = {
     className: 'input',
+    'aria-label': label,
+    'aria-describedby': describedBy,
     value: value === undefined ? '' : String(value),
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(e.target.value || undefined),
   };
 
   return (
     <Field label={label}>
-      {field.description && <p className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
+      {field.description && <p id={descriptionId} className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{field.description}</p>}
       {kind === 'longtext' ? (
         <textarea {...(common as any)} rows={3} />
       ) : kind === 'number' ? (

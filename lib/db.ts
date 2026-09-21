@@ -52,6 +52,12 @@ export const QUESTIONNAIRES = 'questionnaire_responses';
 export const TRACKERS = 'tracker_definitions';
 /** Dotazník vyplněný před platbou, zatím bez účtu. */
 export const DRAFTS = 'questionnaire_drafts';
+/** Jeden zašifrovaný AI výstup a souhlas na zakoupený účet; _id je accountId. */
+export const JOURNAL_ANALYSES = 'journal_analyses';
+/** Finanční žádosti bez zdravotního obsahu; _id refundu je Payment Intent. */
+export const REFUND_REQUESTS = 'refund_requests';
+/** Přijatá právní prohlášení o odstoupení; _id je Checkout Session. */
+export const WITHDRAWAL_REQUESTS = 'withdrawal_requests';
 
 /** Indexy je bezpečné volat opakovaně; Mongo existující jen potvrdí. */
 export async function ensureIndexes(): Promise<void> {
@@ -79,6 +85,10 @@ export async function ensureIndexes(): Promise<void> {
     db.collection(RATE_LIMITS).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
 
     db.collection(QUESTIONNAIRES).createIndex({ tenantId: 1 }, { unique: true }),
+    db.collection(JOURNAL_ANALYSES).createIndex({ tenantId: 1 }),
+    db.collection(REFUND_REQUESTS).createIndex({ accountId: 1, requestedAt: -1 }),
+    db.collection(REFUND_REQUESTS).createIndex({ status: 1, updatedAt: 1 }),
+    db.collection(WITHDRAWAL_REQUESTS).createIndex({ accountId: 1, createdAt: -1 }),
     db.collection(DRAFTS).createIndex({ draftId: 1 }, { unique: true }),
     db.collection(DRAFTS).createIndex({ accountId: 1 }, { sparse: true }),
     // Bez TTL indexu: propadlý draft se maže i s obsahem přes purgeExpiredDrafts(),

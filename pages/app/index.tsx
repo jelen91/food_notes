@@ -2,22 +2,59 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import AppShell, { Disclaimer } from '../../components/AppShell';
+import AnalysisProgress from '../../components/analysis/AnalysisProgress';
+import { displayDate } from '../../components/analysis/AnalysisProgress';
 
 interface Status {
   account: { email: string; emailVerified: boolean; onboarding: string; slug: string | null };
-  billing: { access: boolean };
+  billing: {
+    access: boolean;
+    kind?: string | null;
+    accessUntil?: string | null;
+    expired?: boolean;
+    exportAvailable?: boolean;
+    exportUntil?: string | null;
+  };
   next: string;
 }
 
 /** Popis stavu onboardingu pro uživatele. Zdrojem je vždy server, ne navigace v prohlížeči. */
 const POPIS: Record<string, { nadpis: string; text: string; akce?: string }> = {
-  unpaid: { nadpis: 'Zbývá zaplatit', text: 'Přístup k deníku se odemkne po zaplacení.', akce: 'Přejít k platbě' },
-  checkout_started: { nadpis: 'Platba spuštěna', text: 'Pokud jsi platbu nedokončil, můžeš ji spustit znovu.', akce: 'Zobrazit platbu' },
-  payment_pending: { nadpis: 'Platba se zpracovává', text: 'Jakmile ji brána potvrdí, přístup se aktivuje sám.', akce: 'Zobrazit stav' },
-  paid: { nadpis: 'Připraveno k dotazníku', text: 'Vyplněním krátkého dotazníku vznikne deník na míru.', akce: 'Vyplnit dotazník' },
-  questionnaire_completed: { nadpis: 'Dotazník odeslán', text: 'Můžeš spustit sestavení deníku.', akce: 'Pokračovat' },
-  tracker_queued: { nadpis: 'Deník se připravuje', text: 'Sestavení obvykle trvá krátce.', akce: 'Zobrazit průběh' },
-  tracker_generating: { nadpis: 'Deník se připravuje', text: 'Sestavení obvykle trvá krátce.', akce: 'Zobrazit průběh' },
+  unpaid: {
+    nadpis: 'Zbývá zaplatit',
+    text: 'Přístup k deníku se odemkne po zaplacení.',
+    akce: 'Přejít k platbě',
+  },
+  checkout_started: {
+    nadpis: 'Platba spuštěna',
+    text: 'Pokud jsi platbu nedokončil, můžeš ji spustit znovu.',
+    akce: 'Zobrazit platbu',
+  },
+  payment_pending: {
+    nadpis: 'Platba se zpracovává',
+    text: 'Jakmile ji brána potvrdí, přístup se aktivuje sám.',
+    akce: 'Zobrazit stav',
+  },
+  paid: {
+    nadpis: 'Připraveno k dotazníku',
+    text: 'Vyplněním krátkého dotazníku vznikne deník na míru.',
+    akce: 'Vyplnit dotazník',
+  },
+  questionnaire_completed: {
+    nadpis: 'Dotazník odeslán',
+    text: 'Můžeš spustit sestavení deníku.',
+    akce: 'Pokračovat',
+  },
+  tracker_queued: {
+    nadpis: 'Deník se připravuje',
+    text: 'Sestavení obvykle trvá krátce.',
+    akce: 'Zobrazit průběh',
+  },
+  tracker_generating: {
+    nadpis: 'Deník se připravuje',
+    text: 'Sestavení obvykle trvá krátce.',
+    akce: 'Zobrazit průběh',
+  },
   tracker_failed: { nadpis: 'Sestavení se nepovedlo', text: 'Zkus to prosím znovu.', akce: 'Zkusit znovu' },
   tracker_ready: { nadpis: 'Deník je připravený', text: 'Můžeš začít zapisovat.', akce: 'Otevřít deník' },
 };
@@ -42,7 +79,18 @@ export default function AppHome() {
     })();
   }, [router]);
 
-  const popis = status ? POPIS[status.account.onboarding] ?? POPIS.unpaid : null;
+  const endedPurchase = status?.billing.kind === 'purchase' && !status.billing.access;
+  const popis = endedPurchase
+    ? {
+        nadpis: status.billing.expired ? 'Zaplacená doba přístupu skončila' : 'Přístup k deníku není aktivní',
+        text: status.billing.exportAvailable
+          ? `Uložené záznamy si můžeš stáhnout do ${displayDate(status.billing.exportUntil, true)}. Další platba se automaticky nestrhne.`
+          : 'Stav přístupu, žádosti o vrácení peněz a správu dat najdeš ve svém účtu.',
+        akce: 'Otevřít účet a data',
+      }
+    : status
+      ? (POPIS[status.account.onboarding] ?? POPIS.unpaid)
+      : null;
 
   return (
     <AppShell title="Můj účet">
@@ -54,9 +102,18 @@ export default function AppHome() {
             <h2>{popis?.nadpis}</h2>
             <p className="muted">{popis?.text}</p>
             {popis?.akce && (
-              <button className="btn btn-primary btn-block" style={{ marginTop: 12 }} onClick={() => router.push(status.next)}>
+              <button
+                className="btn btn-primary btn-block"
+                style={{ marginTop: 12 }}
+                onClick={() => router.push(endedPurchase ? '/app/ucet' : status.next)}
+              >
                 {popis.akce}
               </button>
+            )}
+            {status.billing.access && status.billing.accessUntil && (
+              <p className="hint" style={{ marginTop: 12 }}>
+                Přístup do {displayDate(status.billing.accessUntil, true)} · bez automatického prodloužení.
+              </p>
             )}
             {!status.account.emailVerified && (
               <p className="hint" style={{ marginTop: 10 }}>
@@ -67,11 +124,16 @@ export default function AppHome() {
         )}
       </section>
 
+      {status?.billing.access && <AnalysisProgress />}
+
       <section className="card">
         <h2>Účet</h2>
         <div className="stack">
           <Link className="btn btn-ghost btn-block" href="/app/ucet">
             Účet, export a mazání dat
+          </Link>
+          <Link className="btn btn-ghost btn-block" href="/app/vraceni-penez">
+            Vrácení peněz nebo odstoupení od smlouvy
           </Link>
           <button
             className="btn btn-ghost btn-block"

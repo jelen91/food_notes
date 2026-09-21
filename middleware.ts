@@ -25,7 +25,13 @@ const PUBLIC_APP_PAGES = new Set([
 ]);
 
 /** API, které pracuje s účtem (ne s daty konkrétního deníku) – stačí session účtu. */
-const ACCOUNT_API_PREFIXES = ['/api/billing/status', '/api/account/', '/api/tracker'];
+const ACCOUNT_API_PREFIXES = [
+  '/api/billing/status',
+  '/api/billing/refund',
+  '/api/account/',
+  '/api/tracker',
+  '/api/journal-analysis',
+];
 
 /** Endpointy s vlastní autorizací (heslo, jednorázový token, podpis Stripe). */
 const PUBLIC_API = new Set([
@@ -74,7 +80,15 @@ async function canOpenTenant(req: NextRequest, slug: string): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  if (path === '/' || PUBLIC_API.has(path) || PUBLIC_APP_PAGES.has(path)) return NextResponse.next();
+  if (
+    path === '/' ||
+    path === '/podminky' ||
+    path === '/jak-chranime-data' ||
+    path.startsWith('/lp/') ||
+    PUBLIC_API.has(path) ||
+    PUBLIC_APP_PAGES.has(path)
+  )
+    return NextResponse.next();
 
   // Import z Health Auto Export se autorizuje vlastním klíčem v hlavičce, ne cookie.
   if (path === '/api/health' && req.method === 'POST') return NextResponse.next();

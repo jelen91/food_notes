@@ -25,6 +25,9 @@ export interface Draft {
   submittedAt: Date | null;
   /** Vyplní se až po zaplacení, když k draftu vznikne účet. */
   accountId: string | null;
+  /** Jen webhook smí povolit přihlášení, a pouze k účtu nově vytvořenému tímto draftem. */
+  autoSignInAccountId?: string | null;
+  claimedCheckoutSessionId?: string | null;
   createdAt: Date;
   expiresAt: Date | null;
 }
@@ -66,11 +69,27 @@ export async function markDraftSubmitted(draftId: string): Promise<void> {
  * Připojí draft k účtu. Atomické – při opakovaném doručení webhooku uspěje nejvýš jednou
  * a podruhé vrátí už zapsaný účet.
  */
-export async function claimDraft(draftId: string, accountId: string): Promise<'claimed' | 'already' | 'missing'> {
+export async function claimDraft(
+  draftId: string,
+  accountId: string,
+  purchase?: { accountCreated: boolean; checkoutSessionId?: string | null }
+): Promise<'claimed' | 'already' | 'missing'> {
   const db = await getDb();
   const result = await db
     .collection(DRAFTS)
-    .updateOne({ draftId, accountId: null }, { $set: { accountId, expiresAt: null, claimedAt: new Date() } });
+    .updateOne(
+      { draftId, accountId: null },
+      {
+        $set: {
+          accountId,
+          // Samotný e-mail z Checkoutu ani starší vazba draftu na účet nejsou důkaz identity.
+          autoSignInAccountId: purchase?.accountCreated === true && purchase.checkoutSessionId ? accountId : null,
+          claimedCheckoutSessionId: purchase?.checkoutSessionId ?? null,
+          expiresAt: null,
+          claimedAt: new Date(),
+        },
+      }
+    );
   if (result.modifiedCount === 1) return 'claimed';
   const existing = await getDraft(draftId);
   return existing?.accountId ? 'already' : 'missing';

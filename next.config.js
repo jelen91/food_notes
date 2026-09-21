@@ -11,6 +11,8 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Samostatný lokální náhled nesmí přepisovat .next běžícího vývojového serveru.
+  distDir: process.env.FOOD_NOTES_PREVIEW === '1' ? '.next-preview' : '.next',
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

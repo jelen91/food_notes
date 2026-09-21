@@ -12,6 +12,7 @@ import { advance } from '../../../lib/onboarding';
 import { DRAFT_COOKIE, draftIdFromCookie, getDraft } from '../../../lib/drafts';
 import { CHECKOUT_SESSIONS, getDb } from '../../../lib/db';
 import { clientIp, enforceRateLimit, requireSameOrigin } from '../../../lib/rateLimit';
+import { purchaseConsent } from '../../../lib/purchase-consent';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -26,28 +27,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let rateKey: string;
 
   if (account && account.status !== 'deleted') {
-    if (hasAccess(await getEntitlement(account.accountId))) {
-      return res.status(409).json({ error: 'Přístup už je aktivní.', next: '/app' });
+    const entitlement = await getEntitlement(account.accountId);
+    if (entitlement) {
+      return res
+        .status(409)
+        .json({
+          error: hasAccess(entitlement)
+            ? 'Přístup už je aktivní.'
+            : 'Na účtu už je evidovaný nákup. Prodloužení nyní není dostupné; stav přístupu a vrácení peněz najdeš v účtu.',
+          next: '/app/ucet',
+        });
     }
     reference = { accountId: account.accountId, email: account.email };
     rateKey = `checkout:${account.accountId}`;
   } else {
     const draft = await getDraft(draftIdFromCookie(req.cookies[DRAFT_COOKIE]));
     if (!draft) return res.status(400).json({ error: 'Nejdřív prosím vyplň dotazník.', next: '/dotaznik' });
-    if (draft.accountId) return res.status(409).json({ error: 'Platba už proběhla.', next: '/app/prihlaseni' });
-    if (!draft.submittedAt) return res.status(400).json({ error: 'Dotazník ještě není odeslaný.', next: '/dotaznik' });
+    if (draft.accountId)
+      return res.status(409).json({ error: 'Platba už proběhla.', next: '/app/prihlaseni' });
+    if (!draft.submittedAt)
+      return res.status(400).json({ error: 'Dotazník ještě není odeslaný.', next: '/dotaznik' });
     reference = { draftId: draft.draftId };
     rateKey = `checkout:${draft.draftId}`;
   }
+
+  const consent = purchaseConsent(req.body);
+  if (!consent)
+    return res
+      .status(400)
+      .json({ error: 'Před platbou prosím přijmi aktuální podmínky a potvrď žádost o zahájení služby.' });
 
   const priceId = process.env.STRIPE_PRICE_ID;
   const appUrl = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
   if (!priceId || !process.env.STRIPE_SECRET_KEY) {
     return res.status(500).json({ error: 'Platby nejsou nakonfigurované.' });
   }
+  // The preview remains usable with test payments; real sales require identifiable support and receipts.
+  if (
+    !process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') &&
+    !process.env.STRIPE_SECRET_KEY.startsWith('rk_test_') &&
+    ['SELLER_NAME', 'SELLER_ICO', 'SELLER_ADDRESS', 'SUPPORT_EMAIL', 'RESEND_API_KEY', 'EMAIL_FROM'].some(
+      (key) => !process.env[key]?.trim()
+    )
+  ) {
+    return res.status(503).json({ error: 'Objednávky zatím nejsou otevřené. Zkus to prosím později.' });
+  }
 
   if (!(await enforceRateLimit(req, res, { key: rateKey, max: 10, windowSeconds: 3600 }))) return;
-  if (!(await enforceRateLimit(req, res, { key: `checkout-ip:${clientIp(req)}`, max: 30, windowSeconds: 3600 }))) return;
+  if (
+    !(await enforceRateLimit(req, res, { key: `checkout-ip:${clientIp(req)}`, max: 30, windowSeconds: 3600 }))
+  )
+    return;
 
   try {
     const checkout = await getStripe().checkout.sessions.create({
@@ -55,7 +85,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       line_items: [{ price: priceId, quantity: 1 }],
       // Spojení se zákazníkem: interní identifikátor, nic jiného.
       client_reference_id: reference.accountId ?? reference.draftId,
-      metadata: reference.accountId ? { accountId: reference.accountId } : { draftId: reference.draftId! },
+      metadata: {
+        ...(reference.accountId ? { accountId: reference.accountId } : { draftId: reference.draftId! }),
+        purchasePolicyVersion: consent.purchasePolicyVersion,
+        acceptedAt: consent.acceptedAt,
+        priceId,
+      },
+      custom_text: {
+        submit: {
+          message:
+            'Přístup na 12 měsíců bez automatického obnovení. Do 72 hodin od platby garance vrácení celé ceny, i po použití deníku. Zákonná práva zůstávají zachována.',
+        },
+      },
       ...(reference.email ? { customer_email: reference.email } : {}),
       success_url: `${appUrl}/app/platba/hotovo?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/app/platba`,
@@ -67,6 +108,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       accountId: reference.accountId ?? null,
       draftId: reference.draftId ?? null,
       status: 'created',
+      priceId,
+      amountTotal: checkout.amount_total,
+      currency: checkout.currency,
+      purchaseConsent: consent,
       createdAt: new Date(),
     });
 
@@ -76,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.json({ url: checkout.url });
   } catch (error) {
     // Chyba od Stripe se ven nepropisuje, jen do serverového logu.
-    console.error('checkout se nepodařilo založit:', (error as Error).message);
+    console.error('checkout se nepodařilo založit');
     return res.status(502).json({ error: 'Platbu se teď nepodařilo spustit. Zkus to prosím znovu.' });
   }
 }

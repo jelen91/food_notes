@@ -4,10 +4,10 @@
 // ani rodné číslo – tyhle údaje k sestavení trackeru nejsou potřeba, tak je nesbíráme.
 // Struktura je verzovaná, aby staré odpovědi zůstaly srozumitelné i po změně otázek.
 //
-// Verze 2: zmizel výběr „oblastí, které chceš zapisovat“. Co má smysl sledovat, plyne
-// z popsaného problému – vybrat si to má nástroj, ne člověk, který sem přišel s potížemi.
+// Verze 3: upřesnění načasování a srovnání lepších a horších dní pomáhá sestavit deník
+// s údaji, které lze po několika týdnech porovnat. ID a původní volby zůstávají platné.
 
-export const QUESTIONNAIRE_VERSION = 2;
+export const QUESTIONNAIRE_VERSION = 3;
 
 export type QuestionType = 'text' | 'longtext' | 'single' | 'multi';
 
@@ -35,12 +35,12 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
     {
       id: 'cil',
       title: 'Co chceš zjistit',
-      description: 'Podle toho se řídí, co bude deník sledovat.',
+      description: 'Popiš svou situaci vlastními slovy. AI z ní vybere hlavní ukazatel a okolnosti, které bude užitečné porovnávat.',
       questions: [
         {
           id: 'hlavni_otazka',
           label: 'Hlavní otázka, na kterou hledáš odpověď',
-          help: 'Například: „Proč bývám odpoledne úplně bez energie?“',
+          help: 'Zaměř se na jednu hlavní věc, ve které chceš mít jasněji. Například: „Co se opakuje ve dnech, kdy mě odpoledne přepadne únava?“',
           type: 'longtext',
           required: true,
           maxLength: 600,
@@ -48,9 +48,16 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
         {
           id: 'co_prozivas',
           label: 'Co teď prožíváš',
-          help: 'Stručně, vlastními slovy.',
+          help: 'Kdy během dne to přichází, jak často, jak dlouho to trvá a jak tě to omezuje? Stačí pár vět. Piš jen údaje potřebné k tomuto tématu.',
           type: 'longtext',
           maxLength: 800,
+        },
+        {
+          id: 'kdy_se_meni',
+          label: 'Kdy je to lepší a kdy horší',
+          help: 'Dobrovolné. Uveď, čeho sis všiml/a, třeba rozdílu mezi pracovním dnem a víkendem. Pokud máš podezření na souvislost, popiš ji jako domněnku; nemusíš mít vysvětlení.',
+          type: 'longtext',
+          maxLength: 600,
         },
         {
           id: 'jak_dlouho',
@@ -63,7 +70,7 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
     {
       id: 'oblasti',
       title: 'Jak na tom teď jsi',
-      description: 'Pár klepnutí. Co se bude v deníku sledovat, z toho odvodíme sami.',
+      description: 'Tento kontext pomůže AI vybrat smysluplné údaje pro tvou hlavní otázku. Nemusíš sledovat všechno.',
       questions: [
         { id: 'spanek', label: 'Spánek', type: 'single', options: ['dobrý', 'kolísá', 'spíš špatný', 'nevím'] },
         { id: 'traveni', label: 'Trávení', type: 'single', options: ['v pohodě', 'občas potíže', 'často potíže', 'nevím'] },
@@ -75,11 +82,11 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
     {
       id: 'kontext',
       title: 'Kontext',
-      description: 'Všechno v této části je dobrovolné. Vyplň jen to, co sám považuješ za důležité.',
+      description: 'Všechno v této části je dobrovolné. Přidej pouze to, co souvisí s tvou otázkou. Jména, kontakty ani celé lékařské zprávy nepotřebujeme.',
       questions: [
-        { id: 'strava', label: 'Něco specifického ve stravování', type: 'text', maxLength: 300, placeholder: 'např. bez lepku, nepravidelné jídlo' },
-        { id: 'leky', label: 'Léky, které bereš', type: 'text', maxLength: 300 },
-        { id: 'doplnky', label: 'Doplňky stravy', type: 'text', maxLength: 300 },
+        { id: 'strava', label: 'Něco specifického ve stravování', help: 'Pokud to s tématem souvisí, uveď běžný režim nebo nedávnou změnu.', type: 'text', maxLength: 300, placeholder: 'např. nepravidelné jídlo, pozdní večeře' },
+        { id: 'leky', label: 'Léky, které bereš', help: 'Jen pokud jsou pro sledované téma relevantní. Tato odpověď neslouží k doporučení změny léčby.', type: 'text', maxLength: 300 },
+        { id: 'doplnky', label: 'Doplňky stravy', help: 'Dobrovolně, pokud je považuješ za relevantní pro svou otázku.', type: 'text', maxLength: 300 },
         {
           id: 'diagnozy',
           label: 'Diagnózy, které považuješ za relevantní',
@@ -87,16 +94,18 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
           type: 'text',
           maxLength: 300,
         },
-        { id: 'uz_sleduji', label: 'Co už si zapisuješ nebo měříš', type: 'text', maxLength: 300 },
+        { id: 'uz_sleduji', label: 'Co už si zapisuješ nebo měříš', help: 'Například délku spánku nebo čas potíží. AI může návrh přizpůsobit tomu, co už snadno zjistíš; údaje z přístrojů zadáváš ručně.', type: 'text', maxLength: 300 },
       ],
     },
     {
       id: 'rozsah',
       title: 'Kolik toho chceš zapisovat',
+      description: 'Pravidelné údaje o potížích i běžném dni připraví podklad pro tvůj AI rozbor. Zvol rozsah, který zvládneš alespoň 21 dní.',
       questions: [
         {
           id: 'cas_denne',
           label: 'Kolik času denně chceš zápisu věnovat',
+          help: 'AI podle toho omezí počet polí. I krátký pravidelný zápis má hodnotu; události a poznámky můžeš podle potřeby doplnit.',
           type: 'single',
           required: true,
           options: ['do 1 minuty', '2–3 minuty', 'asi 5 minut', 'klidně víc'],
@@ -104,11 +113,12 @@ export const QUESTIONNAIRE: { version: number; sections: QuestionnaireSection[] 
         {
           id: 'detail',
           label: 'Úroveň podrobnosti',
+          help: 'Podrobnější kontext může pomoci při hledání souvislostí. Návrh se vždy přizpůsobí i času, který jsi zvolil/a.',
           type: 'single',
           required: true,
           options: ['jen to podstatné', 'střední', 'podrobné'],
         },
-        { id: 'doplneni', label: 'Cokoli dalšího, co bychom měli vědět', type: 'longtext', maxLength: 800 },
+        { id: 'doplneni', label: 'Cokoli dalšího, co bychom měli vědět', help: 'Například směnný provoz, nepravidelný režim nebo údaj, který nedokážeš snadno zjišťovat. Vyplň jen relevantní informace.', type: 'longtext', maxLength: 800 },
       ],
     },
   ],

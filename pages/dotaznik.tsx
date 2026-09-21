@@ -3,22 +3,22 @@
 // Vyplňuje se po částech – jedna sekce na obrazovku. Odpovědi se tiše ukládají při
 // každém posunu dál, takže nedokončený dotazník jde dopsat i za týden.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
 import { TopBar } from '../components/AppShell';
 import { ChipGroup, Field, Msg } from '../components/ui';
 import { missingRequired } from '../lib/questionnaire';
+import { getLandingPage } from '../lib/landing-pages';
+import { QUESTIONNAIRE_CONSENT_TEXT, QUESTIONNAIRE_CONSENT_VERSION } from '../lib/consent';
 import type { Answers, QuestionDef, QuestionnaireSection } from '../lib/questionnaire';
 
 interface Definition {
   version: number;
   sections: QuestionnaireSection[];
 }
-
-/** Kroky mezikroku po odeslání. Odpovídají tomu, co se s odpověďmi opravdu děje. */
-const KROKY = ['Procházíme tvoje odpovědi', 'Vybíráme, co má smysl sledovat', 'Skládáme deník na míru'];
 
 function Question({
   q,
@@ -34,12 +34,21 @@ function Question({
   if (q.type === 'multi' || q.type === 'single') {
     const selected = Array.isArray(value) ? value : value ? [String(value)] : [];
     return (
-      <div data-chyba={chyba ? '1' : undefined}>
+      <div
+        data-chyba={chyba ? '1' : undefined}
+        role="group"
+        aria-label={q.label}
+        aria-describedby={chyba ? `error-${q.id}` : undefined}
+      >
         <label className="label">
           {q.label}
           {q.required && ' *'}
         </label>
-        {q.help && <p className="hint" style={{ marginTop: 0, marginBottom: 6 }}>{q.help}</p>}
+        {q.help && (
+          <p className="hint" style={{ marginTop: 0, marginBottom: 6 }}>
+            {q.help}
+          </p>
+        )}
         <ChipGroup
           options={(q.options ?? []).map((o) => ({ key: o, label: o }))}
           selected={selected}
@@ -52,7 +61,11 @@ function Question({
             onChange(next.length ? next : undefined);
           }}
         />
-        {chyba && <p className="chyba">{chyba}</p>}
+        {chyba && (
+          <p className="chyba" id={`error-${q.id}`} role="alert">
+            {chyba}
+          </p>
+        )}
       </div>
     );
   }
@@ -60,26 +73,40 @@ function Question({
   return (
     <div data-chyba={chyba ? '1' : undefined}>
       <Field label={`${q.label}${q.required ? ' *' : ''}`}>
-        {q.help && <p className="hint" style={{ marginTop: -2, marginBottom: 6 }}>{q.help}</p>}
-      {q.type === 'longtext' ? (
-        <textarea
-          className={`textarea${chyba ? ' vadne' : ''}`}
-          rows={3}
-          maxLength={q.maxLength}
-          placeholder={q.placeholder}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        />
-      ) : (
-        <input
-          className={`input${chyba ? ' vadne' : ''}`}
-          maxLength={q.maxLength}
-          placeholder={q.placeholder}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        />
-      )}
-        {chyba && <p className="chyba">{chyba}</p>}
+        {q.help && (
+          <p className="hint" style={{ marginTop: -2, marginBottom: 6 }}>
+            {q.help}
+          </p>
+        )}
+        {q.type === 'longtext' ? (
+          <textarea
+            id={`question-${q.id}`}
+            aria-label={q.label}
+            aria-invalid={Boolean(chyba)}
+            className={`textarea${chyba ? ' vadne' : ''}`}
+            rows={3}
+            maxLength={q.maxLength}
+            placeholder={q.placeholder}
+            value={typeof value === 'string' ? value : ''}
+            onChange={(e) => onChange(e.target.value || undefined)}
+          />
+        ) : (
+          <input
+            id={`question-${q.id}`}
+            aria-label={q.label}
+            aria-invalid={Boolean(chyba)}
+            className={`input${chyba ? ' vadne' : ''}`}
+            maxLength={q.maxLength}
+            placeholder={q.placeholder}
+            value={typeof value === 'string' ? value : ''}
+            onChange={(e) => onChange(e.target.value || undefined)}
+          />
+        )}
+        {chyba && (
+          <p className="chyba" id={`error-${q.id}`} role="alert">
+            {chyba}
+          </p>
+        )}
       </Field>
     </div>
   );
@@ -89,9 +116,10 @@ interface Props {
   /** Otázky i rozepsané odpovědi chodí ze serveru, ať první obrazovka trychtýře nebliká. */
   definition: Definition;
   ulozene: Answers;
+  temaTitle: string | null;
 }
 
-export default function Dotaznik({ definition, ulozene }: Props) {
+export default function Dotaznik({ definition, ulozene, temaTitle }: Props) {
   const router = useRouter();
   const [answers, setAnswers] = useState<Answers>(ulozene);
   const [step, setStep] = useState(0);
@@ -99,17 +127,9 @@ export default function Dotaznik({ definition, ulozene }: Props) {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [busy, setBusy] = useState(false);
-  /** Mezikrok po odeslání – zákazník vidí, že se něco děje, než ho pustíme dál. */
-  const [sestavuji, setSestavuji] = useState(false);
-  const [krok, setKrok] = useState(0);
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
   /** Chybějící povinné odpovědi, klíčem je id otázky – hlásí se hned u pole. */
   const [chyby, setChyby] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!sestavuji) return;
-    const t = setInterval(() => setKrok((k) => Math.min(k + 1, KROKY.length)), 1000);
-    return () => clearInterval(t);
-  }, [sestavuji]);
 
   const setAnswer = (id: string, value: string | string[] | undefined) => {
     setAnswers((prev) => {
@@ -129,7 +149,7 @@ export default function Dotaznik({ definition, ulozene }: Props) {
       const res = await fetch('/api/questionnaire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers, submit }),
+        body: JSON.stringify({ answers, submit, consent, consentVersion: QUESTIONNAIRE_CONSENT_VERSION }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -138,9 +158,7 @@ export default function Dotaznik({ definition, ulozene }: Props) {
         return false;
       }
       if (submit) {
-        // Odpovědi jsou uložené; než zákazníka pustíme dál, ukážeme, co se s nimi děje.
-        setSestavuji(true);
-        setTimeout(() => router.push(data.next || '/app/platba'), 3200);
+        await router.push(data.next || '/app/platba');
       }
       return true;
     } catch {
@@ -208,6 +226,7 @@ export default function Dotaznik({ definition, ulozene }: Props) {
     <div className="page">
       <Head>
         <title>Sestavíme deník na míru</title>
+        <meta name="robots" content="noindex, nofollow" />
         <meta name="theme-color" content="#f6f2ea" />
       </Head>
       <TopBar />
@@ -215,26 +234,95 @@ export default function Dotaznik({ definition, ulozene }: Props) {
         <div className="hdr">
           <h1>Sestavíme deník na míru</h1>
           {subtitle && <p>{subtitle}</p>}
+          {consentConfirmed && (
+            <div
+              role="progressbar"
+              aria-label="Průběh dotazníku"
+              aria-valuemin={1}
+              aria-valuemax={total}
+              aria-valuenow={Math.min(step + 1, total)}
+              style={{ height: 6, marginTop: 16, borderRadius: 6, background: 'var(--rule-soft)' }}
+            >
+              <span
+                style={{
+                  display: 'block',
+                  height: '100%',
+                  borderRadius: 6,
+                  background: 'var(--accent, #426851)',
+                  width: `${(Math.min(step + 1, total) / total) * 100}%`,
+                }}
+              />
+            </div>
+          )}
         </div>
         {children}
       </div>
     </div>
   );
 
-  if (sestavuji) {
+  if (!consentConfirmed) {
     return shell(
       <section className="card">
-        <h2>Sestavujeme tvůj deník</h2>
-        <div style={{ marginTop: 14 }}>
-          {KROKY.map((text, i) => (
-            <div className="prubeh" key={text} data-stav={i < krok ? 'hotovo' : i === krok ? 'bezi' : 'ceka'}>
-              <span className="prubeh-znak">{i < krok ? '✓' : '·'}</span>
-              <span>{text}</span>
-            </div>
-          ))}
+        <h2>Začni tím, čemu chceš lépe porozumět</h2>
+        {temaTitle && (
+          <p className="hint">Zaměření: {temaTitle}. Úvodní otázku můžeš upravit vlastními slovy.</p>
+        )}
+        <p className="muted">
+          Dotazník je zdarma a bez registrace. Na konci uvidíš shrnutí odpovědí a cenu. Osobní deník sestavíme
+          až po zaplacení.
+        </p>
+        <div className="questionnaire-value">
+          <h3>Tvůj cíl. Tvůj den. Tvůj deník.</h3>
+          <p>
+            AI z odpovědí vybere, co má smysl pravidelně sledovat, proč a v jaké podobě. Zohlední i čas, který
+            na zápisy máš. Konkrétní odpovědi jí pomohou navrhnout užitečnější deník.
+          </p>
+          <p>
+            V ceně pak získáš jedno AI vyhodnocení vlastních záznamů: souvislosti, možná vysvětlení a další
+            směr. Odemkne se po 21 dnech od platby a alespoň 21 různých dnech se záznamem od platby. Spustíš
+            ho až na svůj pokyn a se samostatným souhlasem.
+          </p>
         </div>
+        <h3 style={{ marginTop: 20 }}>Než začneš: jak použijeme odpovědi</h3>
+        <ul className="muted" style={{ paddingLeft: 18, lineHeight: 1.7, marginTop: 12 }}>
+          <li>Odpovědi mohou obsahovat údaje o zdraví. Při pokračování je uložíme zašifrovaně.</li>
+          <li>
+            Po platbě je pro sestavení polí deníku zpracuje Claude (Anthropic). Přidáme jen otázky a odpovědi,
+            žádné údaje z účtu nebo platby.
+          </li>
+          <li>
+            Nepiš jméno, adresu ani jiné údaje, které pro deník nejsou potřeba. Nepovinné otázky můžeš
+            přeskočit.
+          </li>
+          <li>Deník slouží k vlastním pozorováním a nenahrazuje lékařskou péči.</li>
+        </ul>
+        <p className="hint">
+          <Link href="/jak-chranime-data" target="_blank" rel="noreferrer">
+            Jak chráníme data a kdo je zpracovává
+          </Link>
+        </p>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 16 }}>
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            style={{ marginTop: 4 }}
+          />
+          <span>{QUESTIONNAIRE_CONSENT_TEXT}</span>
+        </label>
+        <button
+          className="btn btn-primary btn-block"
+          style={{ marginTop: 16 }}
+          disabled={!consent}
+          onClick={() => setConsentConfirmed(true)}
+        >
+          Přejít k otázkám
+        </button>
+        <p className="hint">
+          <Link href="/">Zpět na úvod</Link>
+        </p>
       </section>,
-      'Chvilku strpení'
+      'Čtyři krátké části. Povinné jsou jen tři odpovědi.'
     );
   }
 
@@ -250,7 +338,9 @@ export default function Dotaznik({ definition, ulozene }: Props) {
             <div key={q.id} style={{ borderTop: '1px solid var(--rule-soft)', padding: '10px 0' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{q.label}</div>
               <div style={{ whiteSpace: 'pre-wrap' }}>
-                {Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).join(', ') : String(answers[q.id])}
+                {Array.isArray(answers[q.id])
+                  ? (answers[q.id] as string[]).join(', ')
+                  : String(answers[q.id])}
               </div>
             </div>
           ))}
@@ -261,32 +351,42 @@ export default function Dotaznik({ definition, ulozene }: Props) {
         </section>
 
         <section className="card">
-          <h2>Než deník sestavíme</h2>
+          <h2>Připraveno ke shrnutí a ceně</h2>
           <ul className="muted" style={{ paddingLeft: 18, lineHeight: 1.6 }}>
             <li>
-              Odpovědi se použijí k sestavení deníku na míru. Zpracuje je jazykový model Claude
-              (Anthropic); posíláme jen text odpovědí, ne tvoje jméno, e-mail ani údaje o platbě.
+              Po zaplacení se odpovědi použijí k sestavení deníku na míru. Zpracuje je jazykový model Claude
+              (Anthropic); posíláme jen otázky a odpovědi, nepřidáváme údaje z účtu ani platby.
             </li>
             <li>Nástroj nestanovuje diagnózu a nenahrazuje lékařskou péči.</li>
-            <li>Nevyplňuj nic, co nechceš mít zpracované — všechna pole kromě označených hvězdičkou jsou nepovinná.</li>
-            <li>Máš-li akutní zdravotní potíže, obrať se prosím na lékařskou pomoc, ne na tento záznamník.</li>
+            <li>
+              Nevyplňuj nic, co nechceš mít zpracované — všechna pole kromě označených hvězdičkou jsou
+              nepovinná.
+            </li>
+            <li>
+              Máš-li akutní zdravotní potíže, obrať se prosím na lékařskou pomoc, ne na tento záznamník.
+            </li>
           </ul>
+          <p className="hint">
+            <Link href="/jak-chranime-data" target="_blank" rel="noreferrer">
+              Jak chráníme data a kdo je zpracovává
+            </Link>
+          </p>
 
-          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, cursor: 'pointer' }}>
+          <label
+            style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, cursor: 'pointer' }}
+          >
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
               style={{ marginTop: 3 }}
             />
-            <span style={{ fontSize: '0.9rem' }}>
-              Souhlasím s tím, aby moje odpovědi byly zpracovány pro sestavení deníku.
-            </span>
+            <span style={{ fontSize: '0.9rem' }}>{QUESTIONNAIRE_CONSENT_TEXT}</span>
           </label>
 
           <div className="btns" style={{ marginTop: 14 }}>
             <button className="btn btn-primary" disabled={!consent || busy} onClick={submitAll}>
-              {busy ? 'Sestavuji…' : 'Sestavit deník'}
+              {busy ? 'Ukládám…' : 'Zobrazit shrnutí a cenu'}
             </button>
           </div>
           <Msg text={message} error={isError} />
@@ -303,7 +403,11 @@ export default function Dotaznik({ definition, ulozene }: Props) {
     <>
       <section className="card">
         <h2>{section.title}</h2>
-        {section.description && <p className="hint" style={{ marginTop: -4 }}>{section.description}</p>}
+        {section.description && (
+          <p className="hint" style={{ marginTop: -4 }}>
+            {section.description}
+          </p>
+        )}
         <div className="stack" style={{ marginTop: 12 }}>
           {section.questions.map((q) => (
             <Question
@@ -327,7 +431,10 @@ export default function Dotaznik({ definition, ulozene }: Props) {
           )}
         </div>
         <Msg text={message} error={isError} />
-        <p className="hint">Hvězdička označuje povinné otázky. Ostatní vyplň jen pokud chceš. Rozepsané se ukládá samo.</p>
+        <p className="hint">
+          Hvězdička označuje povinné otázky. Ostatní vyplň jen pokud chceš. Odpovědi se uloží při klepnutí na
+          Pokračovat.
+        </p>
       </section>
     </>,
     stepLabel
@@ -335,8 +442,17 @@ export default function Dotaznik({ definition, ulozene }: Props) {
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  ctx.res.setHeader('Cache-Control', 'private, no-store');
   const { QUESTIONNAIRE } = await import('../lib/questionnaire');
   const definition = QUESTIONNAIRE as Definition;
+  const tema = getLandingPage(typeof ctx.query.tema === 'string' ? ctx.query.tema : '');
+  const temaTitle = tema?.title ?? null;
+  const initial: Answers = tema ? { hlavni_otazka: tema.questionnairePrompt } : {};
+  const propsFor = (saved: Answers = {}) => ({
+    definition,
+    ulozene: Object.keys(saved).length ? saved : initial,
+    temaTitle,
+  });
 
   try {
     const { DRAFT_COOKIE, draftIdFromCookie, getDraft } = await import('../lib/drafts');
@@ -347,23 +463,25 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
     // Rozepsané odpovědi patří buď draftu z cookie, nebo přihlášenému účtu.
     let tenantId: string | null = null;
-    const draft = await getDraft(draftIdFromCookie(ctx.req.cookies[DRAFT_COOKIE]));
-    if (draft && !draft.accountId) {
-      tenantId = draft.tenantId;
-    } else {
-      const session = await verifyAccountSession(process.env.AUTH_SECRET || '', ctx.req.cookies[ACCOUNT_COOKIE]);
-      const account = session ? await findAccountById(session.a) : null;
-      if (account?.tenantId) tenantId = account.tenantId;
+    const session = await verifyAccountSession(
+      process.env.AUTH_SECRET || '',
+      ctx.req.cookies[ACCOUNT_COOKIE]
+    );
+    const account = session ? await findAccountById(session.a) : null;
+    if (account && account.status !== 'deleted' && account.tenantId) tenantId = account.tenantId;
+    else {
+      const draft = await getDraft(draftIdFromCookie(ctx.req.cookies[DRAFT_COOKIE]));
+      if (draft && !draft.accountId) tenantId = draft.tenantId;
     }
-    if (!tenantId) return { props: { definition, ulozene: {} } };
+    if (!tenantId) return { props: propsFor() };
 
     const secrets = await getTenantSecrets(tenantId);
-    if (!secrets) return { props: { definition, ulozene: {} } };
+    if (!secrets) return { props: propsFor() };
     const record = await getQuestionnaire(tenantId, secrets.dek);
-    return { props: { definition, ulozene: record.answers ?? {} } };
+    return { props: propsFor(record.answers ?? {}) };
   } catch (error) {
     // Prázdný dotazník je pořád lepší než rozbitá stránka.
     console.error('rozepsané odpovědi se nepodařilo načíst:', (error as Error).message);
-    return { props: { definition, ulozene: {} } };
+    return { props: propsFor() };
   }
 };

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { requireAccount } from '../../lib/apiAuth';
-import { getEntitlement, hasAccess } from '../../lib/billing';
+import { canExport, getEntitlement } from '../../lib/billing';
 import { getTenantSecrets, listDays } from '../../lib/store';
 import { getActiveTracker, getTrackerByVersion } from '../../lib/tracker/store';
 import { buildTrackerMarkdown } from '../../lib/tracker/markdown';
@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!account) return;
 
   const entitlement = await getEntitlement(account.accountId);
-  if (!hasAccess(entitlement)) return res.status(403).json({ error: 'Přístup zatím není aktivní.' });
+  if (!canExport(entitlement)) return res.status(403).json({ error: 'Přístup k exportu není aktivní.' });
   if (!account.tenantId) return res.status(500).json({ error: 'Účet nemá workspace.' });
   if (!(await enforceRateLimit(req, res, { key: `export:${account.accountId}`, max: 30, windowSeconds: 3600 }))) return;
 

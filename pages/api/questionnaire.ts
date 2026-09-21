@@ -22,6 +22,7 @@ import {
 } from '../../lib/drafts';
 import { clientIp, enforceRateLimit, requireSameOrigin } from '../../lib/rateLimit';
 import { ensureIndexes } from '../../lib/db';
+import { hasCurrentQuestionnaireConsent, QUESTIONNAIRE_CONSENT_VERSION } from '../../lib/consent';
 
 /** Kdo dotazník vyplňuje: přihlášený účet, rozpracovaný draft, nebo zatím nikdo. */
 interface Owner {
@@ -72,6 +73,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'POST') {
       if (!requireSameOrigin(req, res)) return;
+      // Check before resolving/creating a workspace or persisting any health answers.
+      if (!hasCurrentQuestionnaireConsent(req.body)) {
+        return res.status(400).json({ error: 'Potřebujeme souhlas s aktuálním zněním zpracování odpovědí. Pokud už je zaškrtnutý, obnov stránku a potvrď ho znovu.' });
+      }
 
       let owner = await resolveOwner(req);
 
@@ -106,6 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         version: QUESTIONNAIRE_VERSION,
         answers: validation.answers,
         submitted: submit,
+        consentVersion: QUESTIONNAIRE_CONSENT_VERSION,
       });
 
       if (submit) {

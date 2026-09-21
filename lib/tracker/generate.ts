@@ -8,6 +8,7 @@ import { MinimizedInput } from '../questionnaire';
 import { PROMPT_VERSION, SYSTEM_PROMPT, buildUserPrompt } from './prompt';
 import { TRACKER_JSON_SCHEMA } from './jsonSchema';
 import { TrackerDefinition, validateTrackerDefinition } from './schema';
+import { trackerDesignProblems } from './design-quality';
 
 export const DEFAULT_MODEL = 'claude-opus-5';
 const MAX_TOKENS = 16000;
@@ -26,7 +27,8 @@ export type FailureCategory =
   | 'refused'
   | 'truncated'
   | 'invalid_json'
-  | 'invalid_schema';
+  | 'invalid_schema'
+  | 'invalid_design';
 
 export interface GenerationMeta {
   model: string;
@@ -148,6 +150,12 @@ export async function generateTracker(
     return { ok: false, category: 'invalid_schema', retryable: true, problems: validation.problems };
   }
 
+  const designProblems = trackerDesignProblems(validation.definition, input);
+  if (designProblems.length) {
+    console.info(`generování trackeru: návrh neprošel kontrolou rozsahu a úplnosti (${designProblems.length} problémů)`);
+    return { ok: false, category: 'invalid_design', retryable: true, problems: designProblems };
+  }
+
   return {
     ok: true,
     definition: validation.definition,
@@ -171,4 +179,5 @@ export const FAILURE_MESSAGE: Record<FailureCategory, string> = {
   truncated: 'Návrh deníku byl příliš rozsáhlý. Zkus to prosím znovu.',
   invalid_json: 'Sestavení se nepodařilo dokončit. Zkus to prosím znovu.',
   invalid_schema: 'Návrh deníku neprošel kontrolou. Zkus to prosím znovu.',
+  invalid_design: 'Návrh deníku nesplnil kontrolu rozsahu nebo úplnosti. Zkus sestavení znovu.',
 };

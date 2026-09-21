@@ -18,6 +18,12 @@ Samoobslužný tok po částech: [milník 1](docs/milnik-1.md) (účty a platby)
 (škály, denní údaje, kategorie událostí, strukturované epizody, moduly) je popsaná v
 `tenants/<id>.json`. Když zákazník něco chce, upraví se JSON — ne komponenty.
 
+## Prodejní stránky (září 2026)
+
+Nový veřejný web a tři tematické landing pages jsou na `/`, `/lp/traveni`, `/lp/migreny` a `/lp/unava`.
+Obsah kampaní, přidání dalších stránek, cenu a ověření popisuje [návod k landing pages](docs/landing-pages.md).
+Cena se načítá ze stejné Stripe konfigurace jako checkout. Lokálně je nastavena požadovaná cena **949 Kč v testovacím režimu**.
+
 ## Jak vypadá běžná práce
 
 **Založení zákazníka**

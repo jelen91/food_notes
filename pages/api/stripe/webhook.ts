@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { getStripe, toEventInput } from '../../../lib/stripe';
 import { handleStripeEvent, mongoBillingStore } from '../../../lib/billing';
 import { ensureIndexes } from '../../../lib/db';
+import { reconcileRefundWebhook } from '../../../lib/refunds/webhook';
 
 // Podpis se ověřuje nad syrovým tělem, takže parser musí zůstat vypnutý.
 export const config = {
@@ -39,6 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await ensureIndexes();
+    if (await reconcileRefundWebhook(event))
+      return res.status(200).json({ received: true, outcome: 'refund_reconciled' });
     const outcome = await handleStripeEvent(toEventInput(event), mongoBillingStore);
     // Logujeme jen metadata události, nikdy její obsah.
     console.info(`webhook ${event.type} ${event.id} → ${outcome}`);

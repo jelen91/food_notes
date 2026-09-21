@@ -15,7 +15,7 @@ const validDefinition = {
       title: 'Den',
       kind: 'daily',
       order: 0,
-      fields: [{ id: 'energie', type: 'scale', label: 'Energie', required: false, order: 0, min: 1, max: 10, higherIsBetter: true }],
+      fields: [{ id: 'energie', type: 'scale', label: 'Energie', description: 'Večer zhodnoť dnešek: 1 = žádná energie, 10 = plná energie. Umožní porovnat lepší a horší dny.', required: true, order: 0, min: 1, max: 10, higherIsBetter: true }],
     },
   ],
 };
@@ -58,6 +58,26 @@ describe('generování trackeru', () => {
     const result = await generateTracker(input, replyWith(JSON.stringify(evil)));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.category).toBe('invalid_schema');
+  });
+
+  it('odmítne i platné schéma, které překračuje uživatelův čas na zápis', async () => {
+    const briefInput = minimizeForModel({ hlavni_otazka: 'Kdy mám méně energie?', cas_denne: 'do 1 minuty' });
+    const result = await generateTracker(briefInput, replyWith(JSON.stringify(validDefinition)));
+    expect(result.ok).toBe(false);
+    expect(result.category).toBe('invalid_design');
+    expect(result.retryable).toBe(true);
+    expect(result).not.toHaveProperty('definition');
+  });
+
+  it('nepublikuje návrh bez srovnatelného hlavního měření', async () => {
+    const incomplete = {
+      ...validDefinition,
+      sections: [{ ...validDefinition.sections[0], fields: [{ ...validDefinition.sections[0].fields[0], required: false }] }],
+    };
+    const result = await generateTracker(input, replyWith(JSON.stringify(incomplete)));
+    expect(result.ok).toBe(false);
+    expect(result.category).toBe('invalid_design');
+    expect(result).not.toHaveProperty('definition');
   });
 
   it('odmítnutí modelu je neopakovatelná chyba', async () => {

@@ -6,6 +6,7 @@ import { decryptJson, encryptJson } from '../crypto';
 import { Answers } from '../questionnaire';
 import { FailureCategory, GenerationMeta } from './generate';
 import { TrackerDefinition } from './schema';
+import { QUESTIONNAIRE_CONSENT_TEXT, QUESTIONNAIRE_CONSENT_VERSION, QuestionnaireConsent } from '../consent';
 
 export type GenerationStatus = 'not_started' | 'queued' | 'generating' | 'completed' | 'failed';
 
@@ -13,6 +14,7 @@ export interface QuestionnaireRecord {
   tenantId: string;
   version: number;
   answers: Answers;
+  consent: QuestionnaireConsent | null;
   submittedAt: Date | null;
   generationStatus: GenerationStatus;
   generationError: FailureCategory | null;
@@ -25,6 +27,7 @@ export interface QuestionnaireRecord {
 const EMPTY: Omit<QuestionnaireRecord, 'tenantId'> = {
   version: 0,
   answers: {},
+  consent: null,
   submittedAt: null,
   generationStatus: 'not_started',
   generationError: null,
@@ -38,11 +41,12 @@ const STALE_LOCK_MS = 10 * 60 * 1000;
 
 function readRecord(dek: Buffer, doc: any, tenantId: string): QuestionnaireRecord {
   if (!doc) return { tenantId, ...EMPTY };
-  const payload = decryptJson<{ answers?: Answers }>(dek, doc.enc, {});
+  const payload = decryptJson<{ answers?: Answers; consent?: QuestionnaireConsent }>(dek, doc.enc, {});
   return {
     tenantId,
     version: doc.version ?? 0,
     answers: payload.answers ?? {},
+    consent: payload.consent ?? null,
     submittedAt: doc.submittedAt ?? null,
     generationStatus: doc.generationStatus ?? 'not_started',
     generationError: doc.generationError ?? null,
@@ -62,15 +66,26 @@ export async function getQuestionnaire(tenantId: string, dek: Buffer): Promise<Q
 export async function saveQuestionnaire(
   tenantId: string,
   dek: Buffer,
-  input: { version: number; answers: Answers; submitted: boolean }
+  input: { version: number; answers: Answers; submitted: boolean; consentVersion: string }
 ): Promise<void> {
+  // Enforce this at the storage boundary too, before any database access. The
+  // timestamp and text come from this server, never from client-provided fields.
+  if (input.consentVersion !== QUESTIONNAIRE_CONSENT_VERSION) throw new Error('Neplatná verze souhlasu.');
+  const now = new Date();
+  const consent: QuestionnaireConsent = {
+    version: QUESTIONNAIRE_CONSENT_VERSION,
+    text: QUESTIONNAIRE_CONSENT_TEXT,
+    acceptedAt: now.toISOString(),
+  };
   const db = await getDb();
   const set: Record<string, unknown> = {
     version: input.version,
-    enc: encryptJson(dek, { answers: input.answers }),
-    updatedAt: new Date(),
+    // Consent and its corresponding answers form one atomic encrypted revision.
+    // Existing questionnaire/account deletion removes the entire payload together.
+    enc: encryptJson(dek, { answers: input.answers, consent }),
+    updatedAt: now,
   };
-  if (input.submitted) set.submittedAt = new Date();
+  if (input.submitted) set.submittedAt = now;
   await db.collection(QUESTIONNAIRES).updateOne(
     { tenantId },
     { $set: set, $setOnInsert: { tenantId, generationStatus: 'not_started', retryCount: 0, createdAt: new Date() } },

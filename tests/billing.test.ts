@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   BillingStore,
   StripeEventInput,
@@ -45,11 +45,11 @@ function fakeStore() {
     },
     async accountFromDraft(draftId, email) {
       if (!email) return null;
-      if (drafts.has(draftId)) return drafts.get(draftId)!;
+      if (drafts.has(draftId)) return { accountId: drafts.get(draftId)!, createdForDraft: true };
       if (draftId !== 'draft_ok') return null;
       const accountId = `acc_z_${draftId}`;
       drafts.set(draftId, accountId);
-      return accountId;
+      return { accountId, createdForDraft: true };
     },
     async notifyAccountReady(email) {
       readyEmails.push(email);
@@ -71,6 +71,51 @@ const completedEvent = (overrides: Partial<StripeEventInput> = {}): StripeEventI
 });
 
 describe('zpracování Stripe události', () => {
+  it('po udělení přístupu a dočasném selhání onboardingu dokončí opakovaný webhook původní platby', async () => {
+    const { store, entitlements } = fakeStore();
+    store.recordEvent = vi.fn(async () => true);
+    store.markEventDone = vi.fn(async () => undefined);
+    store.markEventFailed = vi.fn(async () => undefined);
+    store.resolveDuplicatePayment = vi.fn(async () => 'already_active' as const);
+    store.advanceOnboarding = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('temporary_database_failure'))
+      .mockResolvedValue(true);
+    await expect(handleStripeEvent(completedEvent(), store)).rejects.toThrow('temporary_database_failure');
+    expect(entitlements.size).toBe(1);
+    expect(store.markEventFailed).toHaveBeenCalledWith('evt_1');
+    expect(store.markEventDone).not.toHaveBeenCalled();
+    expect(await handleStripeEvent(completedEvent(), store)).toBe('already_active');
+    expect(store.advanceOnboarding).toHaveBeenCalledTimes(2);
+    expect(store.markEventDone).toHaveBeenCalledWith('evt_1', 'already_active');
+  });
+  it('jinou platbu předá refundaci a nezmění onboarding původního zákazníka', async () => {
+    const { store, transitions } = fakeStore();
+    await handleStripeEvent(completedEvent(), store);
+    transitions.length = 0;
+    store.resolveDuplicatePayment = vi.fn(async () => 'duplicate_purchase_refunded' as const);
+    const second = completedEvent({ id: 'evt_2', checkoutSessionId: 'cs_2', paymentIntentId: 'pi_2' });
+    expect(await handleStripeEvent(second, store)).toBe('duplicate_purchase_refunded');
+    expect(store.resolveDuplicatePayment).toHaveBeenCalledWith('acc_1', second);
+    expect(transitions).toEqual([]);
+  });
+  it('chybu refundace nechá webhook bezpečně opakovat', async () => {
+    const { store } = fakeStore();
+    await handleStripeEvent(completedEvent(), store);
+    store.markEventDone = vi.fn(async () => undefined);
+    store.markEventFailed = vi.fn(async () => undefined);
+    store.resolveDuplicatePayment = vi.fn(async () => {
+      throw new Error('stripe_timeout');
+    });
+    await expect(
+      handleStripeEvent(
+        completedEvent({ id: 'evt_2', checkoutSessionId: 'cs_2', paymentIntentId: 'pi_2' }),
+        store
+      )
+    ).rejects.toThrow('stripe_timeout');
+    expect(store.markEventFailed).toHaveBeenCalledWith('evt_2');
+    expect(store.markEventDone).not.toHaveBeenCalled();
+  });
   it('úspěšná platba udělí přístup', async () => {
     const { store, entitlements, transitions } = fakeStore();
     expect(await handleStripeEvent(completedEvent(), store)).toBe('granted');
@@ -225,7 +270,18 @@ describe('stav přístupu', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    expect(Object.keys(dto).sort()).toEqual(['access', 'customerRef', 'kind', 'paidAt']);
+    expect(Object.keys(dto).sort()).toEqual([
+      'access',
+      'accessUntil',
+      'customerRef',
+      'expired',
+      'exportAvailable',
+      'exportUntil',
+      'kind',
+      'paidAt',
+      'purchasePolicyVersion',
+      'refundUntil',
+    ]);
     expect(JSON.stringify(dto)).not.toContain('pi_1');
     expect(JSON.stringify(dto)).not.toContain('cs_1');
   });

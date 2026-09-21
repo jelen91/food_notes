@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!account) return;
 
   const entitlement = await getEntitlement(account.accountId);
-  if (!hasAccess(entitlement)) return res.status(403).json({ error: 'Přístup zatím není aktivní.', next: '/app/platba' });
+  if (!hasAccess(entitlement)) return res.status(403).json({ error: 'Přístup k deníku není aktivní. Stav přístupu a případný export najdeš ve svém účtu.', next: '/app/ucet' });
   if (!account.tenantId) return res.status(500).json({ error: 'Účet nemá workspace.' });
 
   const tenantId = account.tenantId;

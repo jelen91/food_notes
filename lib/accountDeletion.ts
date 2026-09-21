@@ -16,18 +16,22 @@ import {
   ENTITLEMENTS,
   LABS,
   QUESTIONNAIRES,
+  REFUND_REQUESTS,
   TENANTS,
   TRACKERS,
   USERS,
+  WITHDRAWAL_REQUESTS,
   getDb,
 } from './db';
 import { audit } from './store';
+import { deleteAnalysisData } from './analysis/store';
 
 export interface DeletionSummary {
   days: number;
   labs: number;
   questionnaires: number;
   trackerVersions: number;
+  analyses: number;
   keyDestroyed: boolean;
   billingRecordsKept: number;
 }
@@ -42,11 +46,13 @@ export async function deleteAccountData(accountId: string): Promise<DeletionSumm
     labs: 0,
     questionnaires: 0,
     trackerVersions: 0,
+    analyses: 0,
     keyDestroyed: false,
     billingRecordsKept: 0,
   };
 
   if (tenantId) {
+    summary.analyses = await deleteAnalysisData(accountId, tenantId);
     summary.days = (await db.collection(DAYS).deleteMany({ tenantId })).deletedCount ?? 0;
     summary.labs = (await db.collection(LABS).deleteMany({ tenantId })).deletedCount ?? 0;
     summary.questionnaires = (await db.collection(QUESTIONNAIRES).deleteMany({ tenantId })).deletedCount ?? 0;
@@ -62,7 +68,9 @@ export async function deleteAccountData(accountId: string): Promise<DeletionSumm
   // Doklady o platbě zůstávají; vazba na osobu se omezí na interní ID.
   summary.billingRecordsKept =
     (await db.collection(ENTITLEMENTS).countDocuments({ accountId })) +
-    (await db.collection(CHECKOUT_SESSIONS).countDocuments({ accountId }));
+    (await db.collection(CHECKOUT_SESSIONS).countDocuments({ accountId })) +
+    (await db.collection(REFUND_REQUESTS).countDocuments({ accountId })) +
+    (await db.collection(WITHDRAWAL_REQUESTS).countDocuments({ accountId }));
 
   if (account && account.status !== 'deleted') {
     await db.collection(ACCOUNTS).updateOne(

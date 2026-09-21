@@ -40,14 +40,16 @@ export function toEventInput(event: Stripe.Event): StripeEventInput {
     type: event.type,
     // Platba bez účtu (dotazník napřed) nese draftId; starší Checkouty accountId.
     // client_reference_id je jen zrcadlo pro dashboard, proto se čte až na druhém místě.
-    accountId: session?.metadata?.accountId ?? (draftId ? null : session?.client_reference_id ?? null),
+    accountId: session?.metadata?.accountId ?? (draftId ? null : (session?.client_reference_id ?? null)),
     draftId,
     // E-mail vybírá Stripe v Checkoutu; jiné údaje o zákazníkovi si nebereme.
     customerEmail: session?.customer_details?.email ?? session?.customer_email ?? null,
     checkoutSessionId: session?.id ?? null,
     customerId: idOf(session?.customer),
     paymentIntentId: idOf(session?.payment_intent),
-    priceId: process.env.STRIPE_PRICE_ID ?? null,
+    priceId: session?.metadata?.priceId ?? process.env.STRIPE_PRICE_ID ?? null,
     paymentStatus: session?.payment_status ?? null,
+    purchasePolicyVersion: session?.metadata?.purchasePolicyVersion ?? null,
+    paidAt: Number.isFinite(event.created) ? new Date(event.created * 1000) : null,
   };
 }
