@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCOUNT_COOKIE, cookieName, verifyAccountSession, verifySession } from './lib/session';
+import { getLandingSlug } from './lib/landing-routes';
 
 // Edge middleware nesmí sahat do databáze, takže tady se řeší jen podpis cookie. Skutečná
 // autorizace (existence účtu, vlastnictví dat, entitlement) probíhá v Node routách znovu.
@@ -86,6 +87,7 @@ export async function middleware(req: NextRequest) {
     path === '/jak-chranime-data' ||
     path === '/robots.txt' ||
     path === '/sitemap.xml' ||
+    Boolean(getLandingSlug(path)) ||
     path.startsWith('/brand/') ||
     path.startsWith('/lp/') ||
     PUBLIC_API.has(path) ||
@@ -118,5 +120,11 @@ export async function middleware(req: NextRequest) {
     return (await canOpenTenant(req, slug)) ? NextResponse.next() : deny(req, `/t/${slug}/login`);
   }
 
-  return deny(req, '/');
+  // Neznámou cestu nepouštíme dál: Next by mohl dekódovat např. /t/%61bcdef
+  // jako existující tenant, přestože neprošla autorizací kanonické cesty výše.
+  // Veřejná neznámá adresa zároveň musí vrátit skutečnou 404.
+  return new NextResponse('Stránka nebyla nalezena.', {
+    status: 404,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
 }

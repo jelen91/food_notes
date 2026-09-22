@@ -7,6 +7,10 @@ import JournalDemo from './JournalDemo';
 import Icon, { type IconName } from './Icon';
 import BrandLogo from '../BrandLogo';
 import { BRAND } from '../../lib/brand';
+import { getLandingPath } from '../../lib/landing-routes';
+import { LANDING_GUIDES } from '../../lib/landing-guides';
+import { landingStructuredData, serializeStructuredData } from '../../lib/landing-seo';
+import TopicGuide from './TopicGuide';
 
 export interface LandingProps {
   content: LandingPageContent;
@@ -16,6 +20,7 @@ export interface LandingProps {
 }
 
 export default function LandingPage({ content, offer, resume, canonical }: LandingProps) {
+  const guide = LANDING_GUIDES[content.slug];
   const cta = resume ?? { href: questionnaireHref(content.slug), label: 'Chci porozumět svému tělu' };
   const benefits: { icon: IconName; title: string; text: string }[] = [
     {
@@ -83,7 +88,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
     },
   ];
   return (
-    <div className="marketing">
+    <div className={`marketing${content.slug ? ' marketing-topic' : ''}`}>
       <Head>
         <title>{content.metaTitle}</title>
         <meta name="description" content={content.description} />
@@ -101,6 +106,11 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
         <meta name="twitter:title" content={content.metaTitle} />
         <meta name="twitter:description" content={content.description} />
         <meta name="twitter:image" content={`${BRAND.origin}/brand/social-card.png`} />
+        <script
+          key="public-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeStructuredData(landingStructuredData(content)) }}
+        />
         {canonical && (
           <>
             <link rel="canonical" href={canonical} />
@@ -117,7 +127,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
             <BrandLogo showTagline />
           </Link>
           <nav aria-label="Hlavní navigace">
-            <a href="#jak-to-funguje">Jak to funguje</a>
+            <a href={guide ? '#pruvodce' : '#jak-to-funguje'}>{guide ? 'Průvodce potížemi' : 'Jak to funguje'}</a>
             <a href="#vyhodnoceni">AI vyhodnocení</a>
             <a href="#cena">Co získáte</a>
             <a href="#garance">Garance</a>
@@ -129,6 +139,12 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
         </div>
       </header>
       <main id="obsah">
+        {content.slug && (
+          <nav className="marketing-container marketing-breadcrumbs" aria-label="Drobečková navigace">
+            <Link href="/">{BRAND.name}</Link><span aria-hidden="true">/</span>
+            <span aria-current="page">{content.title}</span>
+          </nav>
+        )}
         <section className="marketing-container marketing-hero">
           <div className="hero-copy">
             <p className="marketing-eyebrow">
@@ -156,8 +172,8 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
                 {cta.label}
                 <Icon name="arrow" size={19} />
               </Link>
-              <a className="marketing-text-link" href="#vyhodnoceni">
-                Co mi AI ukáže <span>↗</span>
+              <a className="marketing-text-link" href={guide ? '#pruvodce' : '#vyhodnoceni'}>
+                {guide ? 'Co má smysl sledovat' : 'Co mi AI ukáže'} <span>↗</span>
               </a>
             </div>
             <p className="hero-microcopy">
@@ -182,7 +198,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
                       </span>
                     ))
                   : LANDING_PAGES.map((page) => (
-                      <Link key={page.slug} href={`/lp/${page.slug}`} className="topic-link">
+                      <Link key={page.slug} href={getLandingPath(page.slug)} className="topic-link">
                         {page.title}
                         <Icon name="arrow" size={14} />
                       </Link>
@@ -203,6 +219,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
             <Icon name="lock" size={18} /> Vyhodnocení spustíte jen vy
           </span>
         </div>
+        {guide && <TopicGuide guide={guide} />}
         <section className="marketing-container recognition-section" aria-labelledby="recognition-title">
           <div className="recognition-copy">
             <p className="marketing-eyebrow">{content.story.eyebrow}</p>
@@ -577,6 +594,19 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
                 </summary>
                 <p>{a}</p>
               </details>
+            ))}
+          </div>
+        </section>
+        <section className="marketing-container related-topics" aria-labelledby="related-title">
+          <p className="marketing-eyebrow">KAŽDÝ PŘÍBĚH MÁ SVÉ SOUVISLOSTI</p>
+          <h2 id="related-title">{content.slug ? 'Trápí vás i jiné potíže?' : 'Začněte tím, co vás trápí.'}</h2>
+          <div>
+            {LANDING_PAGES.filter((page) => page.slug !== content.slug).map((page) => (
+              <Link href={getLandingPath(page.slug)} key={page.slug}>
+                <h3>{page.title}</h3>
+                <p>{page.focus.join(' · ')}</p>
+                <span>Co sledovat a jak začít <Icon name="arrow" size={17} /></span>
+              </Link>
             ))}
           </div>
         </section>

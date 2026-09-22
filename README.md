@@ -26,7 +26,7 @@ Samoobslužný tok po částech: [milník 1](docs/milnik-1.md) (účty a platby)
 
 ## Prodejní stránky (září 2026)
 
-Nový veřejný web a tři tematické landing pages jsou na `/`, `/lp/traveni`, `/lp/migreny` a `/lp/unava`.
+Nový veřejný web a tři tematické landing pages jsou na `/`, `/potize-s-travenim`, `/migreny-a-bolesti-hlavy` a `/unava-a-nedostatek-energie`.
 Obsah kampaní, přidání dalších stránek, cenu a ověření popisuje [návod k landing pages](docs/landing-pages.md).
 Cena se načítá ze stejné Stripe konfigurace jako checkout. Lokálně je nastavena požadovaná cena **949 Kč v testovacím režimu**.
 

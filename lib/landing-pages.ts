@@ -39,14 +39,14 @@ export interface LandingPageContent {
 export const LANDING_PAGES: LandingPageContent[] = [
   {
     slug: 'traveni',
-    title: 'Trávení a nadýmání',
-    metaTitle: brandTitle('Zase potíže po jídle? Najděte svůj další krok'),
+    title: 'Potíže s trávením',
+    metaTitle: brandTitle('Potíže s trávením a nadýmání po jídle'),
     description:
-      'Trávení vás trápí a už nevíte, co dál? Získejte AI deník na míru a osobní vyhodnocení, které vám pomůže hledat souvislosti a vlastní směr k úlevě.',
+      'Trápí vás nadýmání nebo bolesti břicha po jídle? Zjistěte, co sledovat, kdy se obrátit na lékaře a jak vám osobní AI deník pomůže hledat souvislosti.',
     eyebrow: 'KDYŽ UŽ CHCETE VĚDĚT, ČEHO SE CHYTIT',
-    headline: 'Zase potíže po jídle?',
+    headline: 'Potíže s trávením a nadýmání po jídle?',
     emphasis: 'Najděte svůj směr k úlevě.',
-    lead: 'Už nevíte, co jíst a co změnit, abyste se cítili lépe? AI vám sestaví deník podle vašich potíží. Společně v něm zachytíte jídlo, režim i to, jak vám je. Osobní AI vyhodnocení pak pomůže najít souvislosti a konkrétní směr, který stojí za prozkoumání.',
+    lead: 'Nafouklé břicho, pocit plnosti nebo bolesti břicha po jídle vám znovu kazí den? Když se potíže vracejí, je těžké vědět, co změnit. AI vám sestaví deník jídla a příznaků na míru. Zachytíte v něm i spánek a okolnosti dne a získáte osobní přehled možných souvislostí pro svůj další krok.',
     story: {
       eyebrow: 'MOŽNÁ TO ZNÁTE',
       title: 'Je těžké něco změnit, když nevíte, čeho se chytit.',
@@ -96,13 +96,13 @@ export const LANDING_PAGES: LandingPageContent[] = [
   {
     slug: 'migreny',
     title: 'Migrény a bolesti hlavy',
-    metaTitle: brandTitle('Migrény se vracejí? Hledejte svůj další krok'),
+    metaTitle: brandTitle('Migrény a bolesti hlavy: deník a souvislosti'),
     description:
-      'Bolest hlavy vám znovu mění plány? S AI deníkem na míru a osobním vyhodnocením hledejte souvislosti a konkrétní směr, kterému se věnovat dál.',
+      'Vracejí se migrény nebo bolesti hlavy? Podívejte se, co zapisovat do deníku bolesti hlavy a jak sledovat možné spouštěče pro další konzultaci.',
     eyebrow: 'PRO VÁŠ DALŠÍ KROK K LEPŠÍM DNŮM',
-    headline: 'Bolest vám zase mění plány?',
+    headline: 'Migrény a bolesti hlavy vám mění plány?',
     emphasis: 'Pojďte hledat, co může pomoci.',
-    lead: 'Když se bolest vrací, chcete vědět, co s tím můžete dělat. AI vám sestaví deník, který zachytí její průběh i okolnosti vašich dnů. Z vašich zápisů pak připraví osobní vyhodnocení: možné souvislosti, čemu se věnovat dál a co probrat s lékařem.',
+    lead: 'Když se bolest hlavy vrací, chcete vědět, co jí předcházelo a co můžete udělat dál. Osobní deník bolestí hlavy zachytí průběh bolesti, spánek i okolnosti vašich dnů. AI vám pomůže vybrat, co zapisovat, a připraví přehled možných souvislostí i otázek pro lékaře.',
     story: {
       eyebrow: 'MOŽNÁ TO ZNÁTE',
       title: 'Za každou bolestí je i den, který jste chtěli prožít jinak.',
@@ -156,12 +156,12 @@ export const LANDING_PAGES: LandingPageContent[] = [
   },
   {
     slug: 'unava',
-    title: 'Únava a energie',
-    metaTitle: brandTitle('Chybí vám energie? Najděte svůj další krok'),
+    title: 'Únava a nedostatek energie',
+    metaTitle: brandTitle('Dlouhodobá únava a nedostatek energie'),
     description:
-      'Chcete mít zase energii na to, na čem vám záleží? AI deník na míru a osobní vyhodnocení vám pomohou hledat souvislosti a konkrétní další krok.',
+      'Dlouhodobá únava, únava po jídle nebo i po spánku? Zjistěte, co si zaznamenávat a kdy k lékaři. S osobním AI deníkem získáte přehled o svých dnech.',
     eyebrow: 'ABYSTE MĚLI OD ČEHO SE ODRAZIT',
-    headline: 'Chcete mít zase víc energie?',
+    headline: 'Únava a nedostatek energie vás brzdí?',
     emphasis: 'Najděte, čemu se věnovat dál.',
     lead: 'Na práci ještě sílu najdete. Na věci, které máte rádi, už často nezbývá. AI vám sestaví deník podle toho, co prožíváte. Zachytíte energii, spánek i okolnosti dne a získáte osobní vyhodnocení, které pomůže hledat, co může souviset s lepšími i horšími dny.',
     story: {

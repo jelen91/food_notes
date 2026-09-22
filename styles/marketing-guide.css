@@ -1,0 +1,92 @@
+.marketing-breadcrumbs {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 25px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--m-muted);
+}
+.marketing-breadcrumbs a { text-underline-offset: 3px; }
+.marketing-topic .marketing-hero { padding-top: 43px; }
+.marketing-topic h1 { font-size: clamp(43px, 4.8vw, 62px); }
+.topic-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.35fr);
+  gap: 85px;
+  padding-top: 76px;
+  padding-bottom: 76px;
+  border-bottom: 1px solid var(--m-border);
+}
+.guide-heading h2 { max-width: 400px; margin-bottom: 22px; text-wrap: balance; }
+.guide-heading > p:not(.marketing-eyebrow),
+.guide-body p,
+.guide-body li { font-size: 15px; line-height: 1.9; color: var(--m-muted); }
+.guide-toc {
+  display: grid;
+  gap: 0;
+  margin-top: 30px;
+  border-top: 1px solid var(--m-border);
+}
+.guide-toc a {
+  display: grid;
+  grid-template-columns: 23px 1fr 15px;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 0;
+  border-bottom: 1px solid var(--m-border);
+  font-size: 13px;
+  line-height: 1.6;
+  text-decoration: none;
+}
+.guide-toc a span { color: #738364; font-size: 10px; }
+.guide-toc a:hover { color: #8b593e; }
+.guide-body h3 { font-size: 29px; line-height: 1.25; letter-spacing: -0.025em; margin-bottom: 17px; }
+.guide-section + .guide-section,
+.guide-questions { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--m-border); }
+.guide-body ul { padding-left: 20px; margin-bottom: 0; }
+.guide-body li { padding-left: 5px; margin-bottom: 10px; }
+.guide-body li:last-child,
+.guide-section > p:last-child { margin-bottom: 0; }
+.guide-body li::marker { color: #7e926b; }
+.guide-questions h4 { font-family: var(--sans); font-size: 16px; line-height: 1.6; margin: 24px 0 7px; font-weight: 600; }
+.guide-sources { background: #eef0e5; padding: 22px 25px; border-radius: 9px; margin-top: 30px; }
+.guide-sources p,
+.guide-sources li { font-size: 12px; line-height: 1.8; }
+.guide-sources a { text-underline-offset: 3px; overflow-wrap: anywhere; }
+.guide-sources > p:last-child { margin: 17px 0 0; }
+.related-topics { padding-top: 25px; padding-bottom: 70px; }
+.related-topics h2 { margin-bottom: 28px; }
+.related-topics > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.related-topics > div > a {
+  display: flex;
+  flex-direction: column;
+  padding: 26px;
+  border: 1px solid var(--m-border);
+  border-radius: 9px;
+  text-decoration: none;
+}
+.related-topics > div > a:hover { border-color: #8b997c; background: #eff1e7; }
+.related-topics h3 { font-size: 26px; line-height: 1.25; margin-bottom: 12px; }
+.related-topics p { font-size: 13px; line-height: 1.8; color: var(--m-muted); }
+.related-topics a span { display: flex; gap: 10px; align-items: center; margin-top: auto; font-size: 12px; }
+@media (max-width: 950px) {
+  .topic-guide { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 40px; }
+}
+@media (max-width: 680px) {
+  .marketing-breadcrumbs { padding-top: 18px; font-size: 11px; gap: 8px; }
+  .marketing-topic .marketing-hero { padding-top: 28px; }
+  .marketing-topic h1 { font-size: 43px; }
+  .topic-guide { grid-template-columns: minmax(0, 1fr); gap: 35px; padding-top: 48px; padding-bottom: 48px; }
+  .guide-heading h2 { max-width: none; }
+  .guide-body h3 { font-size: 28px; }
+  .guide-body p, .guide-body li, .guide-heading > p:not(.marketing-eyebrow) { font-size: 14px; }
+  .guide-sources { padding: 20px; }
+  .guide-sources p, .guide-sources li { font-size: 12px; }
+  .related-topics { padding-bottom: 45px; }
+  .related-topics > div { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 360px) {
+  .marketing-topic h1 { font-size: 37px; }
+}

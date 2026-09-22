@@ -5,6 +5,7 @@ import { getServerSideProps as sitemap } from '../pages/sitemap.xml';
 import { getServerSideProps as robots } from '../pages/robots.txt';
 import { landingProps } from '../lib/landing-server';
 import { LANDING_PAGES } from '../lib/landing-pages';
+import { getLandingPath, LANDING_ROUTES } from '../lib/landing-routes';
 import { BRAND } from '../lib/brand';
 import { middleware } from '../middleware';
 import nextConfig from '../next.config';
@@ -42,8 +43,9 @@ describe('public discovery and private application routes', () => {
     expect(urls.length).toBe(LANDING_PAGES.length + 3);
     expect(urls.every((url) => url.origin === BRAND.origin && !url.search)).toBe(true);
     expect(urls.map((url) => url.pathname)).toEqual([
-      '/', ...LANDING_PAGES.map(({ slug }) => `/lp/${slug}`), '/podminky', '/jak-chranime-data',
+      '/', ...LANDING_PAGES.map(({ slug }) => getLandingPath(slug)), '/podminky', '/jak-chranime-data',
     ]);
+    expect(xml).not.toContain('/lp/');
     expect(xml).not.toContain('private');
     expect(ctx.res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/xml; charset=utf-8');
   });
@@ -56,16 +58,36 @@ describe('public discovery and private application routes', () => {
       expect(body).toContain(`Disallow: ${path}\n`);
     }
     expect(body).toContain(`Sitemap: ${BRAND.origin}/sitemap.xml`);
-    for (const path of ['/robots.txt', '/sitemap.xml', '/brand/favicon.svg']) {
+    for (const path of ['/robots.txt', '/sitemap.xml', '/brand/favicon.svg', '/lp/nezname-tema', ...Object.values(LANDING_ROUTES)]) {
       const response = await middleware(new NextRequest(`${BRAND.origin}${path}`));
       expect(response.headers.get('x-middleware-next')).toBe('1');
     }
-    for (const path of ['/app/denik', '/t/abcdef', '/brand-private/secrets']) {
+    for (const path of ['/app/denik', '/t/abcdef', '/t/abcdef/labs']) {
       const response = await middleware(new NextRequest(`${BRAND.origin}${path}`));
       expect(response.status).toBe(307);
     }
     const api = await middleware(new NextRequest(`${BRAND.origin}/api/notes`));
     expect(api.status).toBe(401);
+    for (const path of ['/nezname-tema', '/brand-private/secrets']) {
+      const response = await middleware(new NextRequest(`${BRAND.origin}${path}`));
+      expect(response.status).toBe(404);
+      expect(response.headers.has('x-middleware-next')).toBe(false);
+      expect(response.headers.has('location')).toBe(false);
+    }
+  });
+
+  it.each([
+    ['/t/%61bcdef', 404],
+    ['/%74/abcdef/labs', 404],
+    ['/%61pp/denik', 404],
+    ['/app/%64enik', 307],
+    ['/%61pi/notes?t=abcdef', 404],
+    ['/api/%6eotes?t=abcdef', 401],
+  ])('does not let encoded private route %s bypass authorization', async (path, status) => {
+    const response = await middleware(new NextRequest(`${BRAND.origin}${path}`));
+    expect(response.status).toBe(status);
+    expect(response.headers.has('x-middleware-next')).toBe(false);
+    expect(response.headers.has('x-middleware-rewrite')).toBe(false);
   });
 
   it('adds noindex response headers to all account, diary, API and questionnaire routes', async () => {
@@ -81,7 +103,7 @@ describe('public discovery and private application routes', () => {
     vi.stubEnv('APP_URL', 'http://localhost:3000');
     const ctx = context();
     const result = await landingProps(ctx as unknown as GetServerSidePropsContext, LANDING_PAGES[0]);
-    expect(result.canonical).toBe(`${BRAND.origin}/lp/${LANDING_PAGES[0].slug}`);
+    expect(result.canonical).toBe(`${BRAND.origin}${getLandingPath(LANDING_PAGES[0].slug)}`);
     expect(ctx.res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
   });
 });

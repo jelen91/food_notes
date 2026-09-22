@@ -3,6 +3,7 @@ import type { LandingPageContent } from './landing-pages';
 import type { LandingProps } from '../components/marketing/LandingPage';
 import { getPublicOffer } from './offer';
 import { BRAND } from './brand';
+import { getLandingPath } from './landing-routes';
 
 async function resumePath(cookies: Record<string, string>): Promise<LandingProps['resume']> {
   const { ACCOUNT_COOKIE, verifyAccountSession } = await import('./session');
@@ -41,6 +42,6 @@ export async function landingProps(
   ]);
   // Marketing vždy odkazuje na hlavní doménu. APP_URL zůstává runtime nastavením
   // návratů z plateb a odkazů v e-mailech, včetně izolovaného lokálního testování.
-  const canonical = `${BRAND.origin}${content.slug ? `/lp/${encodeURIComponent(content.slug)}` : '/'}`;
+  const canonical = `${BRAND.origin}${getLandingPath(content.slug)}`;
   return { content, offer, resume, canonical };
 }

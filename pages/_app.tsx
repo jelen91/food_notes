@@ -2,6 +2,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import '../styles/globals.css';
 import '../styles/marketing.css';
+import '../styles/marketing-guide.css';
 import '../styles/analysis.css';
 import '../styles/brand.css';
 import { BRAND } from '../lib/brand';

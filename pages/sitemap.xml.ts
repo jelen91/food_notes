@@ -1,12 +1,13 @@
 import type { GetServerSideProps } from 'next';
 import { BRAND } from '../lib/brand';
 import { LANDING_PAGES } from '../lib/landing-pages';
+import { getLandingPath } from '../lib/landing-routes';
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // Sitemap čerpá jen z veřejného obsahu; žádné čtení databáze ani slugů deníků.
   const paths = [
     '/',
-    ...LANDING_PAGES.map(({ slug }) => `/lp/${encodeURIComponent(slug)}`),
+    ...LANDING_PAGES.map(({ slug }) => getLandingPath(slug)),
     '/podminky',
     '/jak-chranime-data',
   ];

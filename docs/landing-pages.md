@@ -8,22 +8,26 @@ a nastavení návratových odkazů řeší [domain.md](domain.md).
 Veřejné stránky používají společnou komponentu `components/marketing/LandingPage.tsx` a samostatný obsah v `lib/landing-pages.ts`:
 
 - `/` — přehled produktu;
-- `/lp/traveni` — jídlo, trávení a nadýmání;
-- `/lp/migreny` — migrény a bolesti hlavy;
-- `/lp/unava` — únava a energie;
+- `/potize-s-travenim` — jídlo, trávení a nadýmání;
+- `/migreny-a-bolesti-hlavy` — migrény a bolesti hlavy;
+- `/unava-a-nedostatek-energie` — únava a energie;
 - `/jak-chranime-data` — technický, srozumitelný popis zacházení s daty. Nenahrazuje kompletní právní informace provozovatele.
 
 ## Přidání dalšího tématu
 
-Do `LANDING_PAGES` přidej objekt typu `LandingPageContent` s unikátním jednoduchým slugem. Obsahuje titulek a popis pro vyhledávače, nadpis, vysvětlení hodnoty, tematický příběh a rozpoznatelné situace (`story`), upravitelnou úvodní otázku dotazníku, ilustrační zápisy, ukázku AI přehledu (`analysisDemo`), oblasti sledování a jednu tematickou FAQ. Dynamická cesta `/lp/[slug]` stránku automaticky vykreslí a homepage ji nabídne mezi tématy. Neznámá cesta vrátí 404.
+Do `LANDING_PAGES` přidej objekt typu `LandingPageContent` s unikátním jednoduchým slugem. Obsahuje titulek a popis pro vyhledávače, nadpis, vysvětlení hodnoty, tematický příběh a rozpoznatelné situace (`story`), upravitelnou úvodní otázku dotazníku, ilustrační zápisy, ukázku AI přehledu (`analysisDemo`), oblasti sledování a jednu tematickou FAQ. Do `LANDING_ROUTES` v `lib/landing-routes.ts` doplň odpovídající čitelnou veřejnou cestu. Interní slug zůstává stabilní pro dotazník a objednávky. Dynamická cesta `/[landing]` vykreslí pouze témata z této mapy; homepage a související témata je nabídnou jako odkazy. Neznámá cesta vrátí 404. Staré `/lp/<slug>` trvale přesměrují (308) na novou cestu se zachováním query parametrů. Praktický tematický průvodce, otázky a ověřené zdroje patří do `lib/landing-guides.ts`.
 
 CTA vede na `/dotaznik?tema=<slug>`. Téma pouze předvyplní novou hlavní otázku; uložené odpovědi nepřepisuje. Nejde o reklamní měření ani automatickou diagnózu. Dotazník, platba a návrat do aplikace mají zachovanou stávající cestu zákazníka.
 
-Texty nejprve pojmenovávají prožitek opakovaných potíží, nejistotu a přání najít cestu k úlevě. Každé téma má vlastní hero i sekci `story` se situacemi, ve kterých se návštěvník může poznat. Výzva „Chci najít svůj směr“ vede na bezplatný dotazník. Text u nabídky vysvětluje hodnotu záznamů mezi návštěvami lékaře a jejich využití při konzultaci. Netvrdí, že AI nahrazuje odbornou péči nebo určí léčbu.
+Texty nejprve pojmenovávají prožitek opakovaných potíží, nejistotu a přání najít cestu k úlevě. Každé téma má vlastní hero i sekci `story` se situacemi, ve kterých se návštěvník může poznat. Výzva „Chci porozumět svému tělu“ vede na bezplatný dotazník. Text u nabídky vysvětluje hodnotu záznamů mezi návštěvami lékaře a jejich využití při konzultaci. Netvrdí, že AI nahrazuje odbornou péči nebo určí léčbu.
 
 Nabídka propojuje tři kroky: AI sestaví deník na míru, zákazník zaznamenává vlastní pozorování a po splnění podmínek si jednou spustí osobní AI vyhodnocení. Zdůrazňuje smysluplný rozsah, pravidelnost, srovnatelná měření a zápisy i ve dnech bez potíží. Více relevantního kontextu dává více možností porovnávat; samotný počet údajů nezaručuje přesnost nebo nalezení souvislosti.
 
 Nepřidávej do obsahu záruky zdravotního výsledku, neexistující reference nebo funkce dostupné pouze v ručně vytvořených legacy denících. Služba neuděluje diagnózu, nepotvrzuje příčinu a nenavrhuje léčbu. Minimum 21 dní je produktová podmínka, nikoli klinicky ověřená doba potřebná k určení příčiny. Ilustrační počty a data v ukázkách musí zůstat zřetelně označené jako vymyšlený příklad.
+
+## Organické vyhledávání
+
+Každé téma má vlastní titulek, meta popis, H1, praktický průvodce a otázky k potížím. Metadata, canonical, sitemap a interní odkazy používají jedinou veřejnou URL. Viditelná drobečková navigace odpovídá JSON-LD `BreadcrumbList`; `WebSite` a `WebPage` obsahují pouze veřejná data. SEO záměry a kroky po nasazení shrnuje [seo.md](seo.md).
 
 ## Cena
 

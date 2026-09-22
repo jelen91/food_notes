@@ -37,9 +37,9 @@ Nasazení kódu samo neznamená, že byla doména zakoupena, připojena nebo zm�
 | Stránka | Adresa |
 | --- | --- |
 | Rozumím tělu | https://rozumimtelu.cz/ |
-| Trávení | https://rozumimtelu.cz/lp/traveni |
-| Migrény | https://rozumimtelu.cz/lp/migreny |
-| Únava | https://rozumimtelu.cz/lp/unava |
+| Trávení | https://rozumimtelu.cz/potize-s-travenim |
+| Migrény | https://rozumimtelu.cz/migreny-a-bolesti-hlavy |
+| Únava | https://rozumimtelu.cz/unava-a-nedostatek-energie |
 | Podmínky | https://rozumimtelu.cz/podminky |
 | Ochrana dat | https://rozumimtelu.cz/jak-chranime-data |
 
