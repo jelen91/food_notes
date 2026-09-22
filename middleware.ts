@@ -84,6 +84,9 @@ export async function middleware(req: NextRequest) {
     path === '/' ||
     path === '/podminky' ||
     path === '/jak-chranime-data' ||
+    path === '/robots.txt' ||
+    path === '/sitemap.xml' ||
+    path.startsWith('/brand/') ||
     path.startsWith('/lp/') ||
     PUBLIC_API.has(path) ||
     PUBLIC_APP_PAGES.has(path)

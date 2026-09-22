@@ -5,6 +5,8 @@ import { LANDING_PAGES, questionnaireHref } from '../../lib/landing-pages';
 import { ACCESS_MONTHS, EXPORT_GRACE_DAYS } from '../../lib/purchase-policy';
 import JournalDemo from './JournalDemo';
 import Icon, { type IconName } from './Icon';
+import BrandLogo from '../BrandLogo';
+import { BRAND } from '../../lib/brand';
 
 export interface LandingProps {
   content: LandingPageContent;
@@ -14,7 +16,7 @@ export interface LandingProps {
 }
 
 export default function LandingPage({ content, offer, resume, canonical }: LandingProps) {
-  const cta = resume ?? { href: questionnaireHref(content.slug), label: 'Chci najít svůj směr' };
+  const cta = resume ?? { href: questionnaireHref(content.slug), label: 'Chci porozumět svému tělu' };
   const benefits: { icon: IconName; title: string; text: string }[] = [
     {
       icon: 'note',
@@ -90,6 +92,15 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
         <meta property="og:description" content={content.description} />
         <meta property="og:type" content="website" />
         <meta property="og:locale" content="cs_CZ" />
+        <meta property="og:site_name" content={BRAND.name} />
+        <meta property="og:image" content={`${BRAND.origin}/brand/social-card.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${BRAND.name} — ${BRAND.tagline}`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={content.metaTitle} />
+        <meta name="twitter:description" content={content.description} />
+        <meta name="twitter:image" content={`${BRAND.origin}/brand/social-card.png`} />
         {canonical && (
           <>
             <link rel="canonical" href={canonical} />
@@ -102,13 +113,8 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
       </a>
       <header className="marketing-header">
         <div className="marketing-container marketing-nav">
-          <Link className="marketing-brand" href="/" aria-label="Deník pozorování — úvod">
-            <span className="brand-symbol">
-              <Icon name="book" size={24} />
-            </span>
-            <span>
-              deník<span className="brand-second">pozorování</span>
-            </span>
+          <Link className="marketing-brand" href="/" aria-label={`${BRAND.name} — úvod`}>
+            <BrandLogo showTagline />
           </Link>
           <nav aria-label="Hlavní navigace">
             <a href="#jak-to-funguje">Jak to funguje</a>
@@ -157,7 +163,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
             <p className="hero-microcopy">
               <Icon name="check" size={15} /> Dotazník zdarma, bez registrace<span>·</span> Platba až potom
             </p>
-            <Link className="hero-guarantee" href="/podminky#garance">
+            <Link className="hero-guarantee" href="/podminky#vraceni-penez">
               <span className="guarantee-check">
                 <Icon name="check" size={17} />
               </span>
@@ -467,7 +473,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
                 </>
               )}
             </div>
-            <Link className="offer-guarantee" href="/podminky#garance">
+            <Link className="offer-guarantee" href="/podminky#vraceni-penez">
               <span className="guarantee-check">
                 <Icon name="check" size={18} />
               </span>
@@ -536,7 +542,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
                 {resume ? cta.label : 'Chci dát deníku šanci'}
                 <Icon name="arrow" size={18} />
               </Link>
-              <Link className="marketing-text-link" href="/podminky#garance">
+              <Link className="marketing-text-link" href="/podminky#vraceni-penez">
                 Jak funguje garance
               </Link>
             </div>
@@ -586,7 +592,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
             {cta.label}
             <Icon name="arrow" size={19} />
           </Link>
-          <Link className="closing-guarantee" href="/podminky#garance">
+          <Link className="closing-guarantee" href="/podminky#vraceni-penez">
             <Icon name="check" size={16} /> Po zaplacení máte 3 dny na vyzkoušení s vrácením celé ceny.
           </Link>
         </section>
@@ -594,9 +600,10 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
       <footer className="marketing-container marketing-footer">
         <div>
           <Link className="footer-brand" href="/">
-            Deník pozorování
+            <BrandLogo />
           </Link>
-          <p>Vaše pozorování. Jasnější další krok.</p>
+          <p className="footer-tagline">{BRAND.tagline}</p>
+          <Link className="footer-domain" href="/">{BRAND.domain}</Link>
         </div>
         <div className="footer-links">
           <Link href="/jak-chranime-data">Jak pracujeme s daty</Link>
@@ -615,7 +622,7 @@ export default function LandingPage({ content, offer, resume, canonical }: Landi
           {cta.label}
           <Icon name="arrow" size={17} />
         </Link>
-        <Link href="/podminky#garance">3 dny na vyzkoušení · garance vrácení celé ceny</Link>
+        <Link href="/podminky#vraceni-penez">3 dny na vyzkoušení · garance vrácení celé ceny</Link>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Head from 'next/head';
 import type { GetServerSideProps } from 'next';
 import { TopBar } from '../../../components/AppShell';
+import { brandTitle } from '../../../lib/brand';
 import { Field, Msg } from '../../../components/ui';
 import { parseLabLines } from '../../../lib/labParse';
 import { LabDoc, LabMeta, LabValue, labFlag } from '../../../lib/schema';
@@ -164,7 +165,7 @@ export default function LabsPage({ slug, title }: Props) {
   return (
     <div className="page">
       <Head>
-        <title>{`Laboratoře – ${title}`}</title>
+        <title>{brandTitle(`Laboratoře – ${title}`)}</title>
       </Head>
       <TopBar
         href={`/t/${slug}`}

@@ -37,12 +37,12 @@ const POPIS: Record<string, { nadpis: string; text: string; akce?: string }> = {
   },
   paid: {
     nadpis: 'Připraveno k dotazníku',
-    text: 'Vyplněním krátkého dotazníku vznikne deník na míru.',
+    text: 'Pověz nám, co tě trápí a čemu chceš lépe porozumět. Podle odpovědí ti AI navrhne deník na míru.',
     akce: 'Vyplnit dotazník',
   },
   questionnaire_completed: {
     nadpis: 'Dotazník odeslán',
-    text: 'Můžeš spustit sestavení deníku.',
+    text: 'Tvoje odpovědi jsou připravené. Teď z nich může AI sestavit osobní deník pro tvoje pozorování.',
     akce: 'Pokračovat',
   },
   tracker_queued: {
@@ -56,7 +56,11 @@ const POPIS: Record<string, { nadpis: string; text: string; akce?: string }> = {
     akce: 'Zobrazit průběh',
   },
   tracker_failed: { nadpis: 'Sestavení se nepovedlo', text: 'Zkus to prosím znovu.', akce: 'Zkusit znovu' },
-  tracker_ready: { nadpis: 'Deník je připravený', text: 'Můžeš začít zapisovat.', akce: 'Otevřít deník' },
+  tracker_ready: {
+    nadpis: 'Tvůj deník je připravený',
+    text: 'Začni dneškem. Každý zapsaný den pomáhá vytvořit ucelenější obrázek o tom, jak se cítíš.',
+    akce: 'Otevřít deník',
+  },
 };
 
 export default function AppHome() {

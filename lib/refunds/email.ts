@@ -1,7 +1,9 @@
 import type { WithdrawalReceipt } from './types';
+import { BRAND, brandTitle } from '../brand';
 
 export function withdrawalReceiptText(receipt: WithdrawalReceipt): string {
   return [
+    BRAND.name,
     'Potvrzení přijetí odstoupení od smlouvy',
     `Potvrzení: ${receipt.reference}`,
     `Účet: ${receipt.accountEmail}`,
@@ -12,6 +14,9 @@ export function withdrawalReceiptText(receipt: WithdrawalReceipt): string {
     receipt.statement,
     '',
     'Odstoupení jsme přijali. Vypořádání platby se posuzuje podle zákona. Toto potvrzení neznamená, že peníze již dorazily na váš účet.',
+    '',
+    BRAND.name,
+    BRAND.domain,
   ].join('\n');
 }
 
@@ -36,7 +41,7 @@ export async function sendWithdrawalReceipt(
       body: JSON.stringify({
         from,
         to,
-        subject: 'Potvrzení přijetí odstoupení od smlouvy',
+        subject: brandTitle('Potvrzení přijetí odstoupení od smlouvy'),
         text: withdrawalReceiptText(receipt),
       }),
     });

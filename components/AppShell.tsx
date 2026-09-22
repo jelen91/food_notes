@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import BrandLogo from './BrandLogo';
+import { BRAND, brandTitle } from '../lib/brand';
 
 /** Neutrální sdělení o povaze produktu. Zobrazuje se v onboardingu, v účtu a v exportu. */
 export const DISCLAIMER =
@@ -16,7 +18,7 @@ export function TopBar({ href = '/', action }: { href?: string; action?: ReactNo
     <div className="topbar">
       <div className="topbar-in">
         <Link className="mark" href={href}>
-          Deník pozorování
+          <BrandLogo />
         </Link>
         {action}
       </div>
@@ -43,8 +45,8 @@ export default function AppShell({
   return (
     <div className="page">
       <Head>
-        <title>{title}</title>
-        <meta name="theme-color" content="#f6f2ea" />
+        <title>{brandTitle(title)}</title>
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
 
       <TopBar

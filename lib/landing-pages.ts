@@ -1,3 +1,5 @@
+import { BRAND, brandTitle } from './brand';
+
 /** Obsah kampaní na jednom místě. Žádná z tématických stránek neurčuje diagnózu. */
 export interface LandingPageContent {
   slug: string;
@@ -38,7 +40,7 @@ export const LANDING_PAGES: LandingPageContent[] = [
   {
     slug: 'traveni',
     title: 'Trávení a nadýmání',
-    metaTitle: 'Zase potíže po jídle? Najděte svůj další krok | Deník pozorování',
+    metaTitle: brandTitle('Zase potíže po jídle? Najděte svůj další krok'),
     description:
       'Trávení vás trápí a už nevíte, co dál? Získejte AI deník na míru a osobní vyhodnocení, které vám pomůže hledat souvislosti a vlastní směr k úlevě.',
     eyebrow: 'KDYŽ UŽ CHCETE VĚDĚT, ČEHO SE CHYTIT',
@@ -94,7 +96,7 @@ export const LANDING_PAGES: LandingPageContent[] = [
   {
     slug: 'migreny',
     title: 'Migrény a bolesti hlavy',
-    metaTitle: 'Migrény se vracejí? Hledejte svůj další krok | Deník pozorování',
+    metaTitle: brandTitle('Migrény se vracejí? Hledejte svůj další krok'),
     description:
       'Bolest hlavy vám znovu mění plány? S AI deníkem na míru a osobním vyhodnocením hledejte souvislosti a konkrétní směr, kterému se věnovat dál.',
     eyebrow: 'PRO VÁŠ DALŠÍ KROK K LEPŠÍM DNŮM',
@@ -155,7 +157,7 @@ export const LANDING_PAGES: LandingPageContent[] = [
   {
     slug: 'unava',
     title: 'Únava a energie',
-    metaTitle: 'Chybí vám energie? Najděte svůj další krok | Deník pozorování',
+    metaTitle: brandTitle('Chybí vám energie? Najděte svůj další krok'),
     description:
       'Chcete mít zase energii na to, na čem vám záleží? AI deník na míru a osobní vyhodnocení vám pomohou hledat souvislosti a konkrétní další krok.',
     eyebrow: 'ABYSTE MĚLI OD ČEHO SE ODRAZIT',
@@ -207,14 +209,14 @@ export const LANDING_PAGES: LandingPageContent[] = [
 export const HOME_CONTENT: LandingPageContent = {
   ...LANDING_PAGES[0],
   slug: '',
-  title: 'Deník pozorování',
-  metaTitle: 'Potíže se vracejí. Najděte svůj další krok | Deník pozorování',
+  title: BRAND.name,
+  metaTitle: brandTitle('Osobní AI deník a souvislosti vašich potíží'),
   description:
     'Potíže vás omezují a už nevíte, co dál? AI deník na míru a osobní vyhodnocení vám pomohou hledat souvislosti a vlastní směr k tomu, aby vám bylo lépe.',
-  eyebrow: 'VAŠE ZKUŠENOST MŮŽE UKÁZAT NOVÝ SMĚR',
-  headline: 'Potíže se vracejí.',
-  emphasis: 'Vy už chcete vědět, co dál.',
-  lead: 'Chcete se cítit lépe, ale už nevíte, čeho se chytit? Začněte u svého každodenního života. AI vám sestaví deník na míru a z vašich záznamů připraví osobní vyhodnocení: možné souvislosti a konkrétní další kroky při hledání toho, co vám může pomoci.',
+  eyebrow: 'VAŠE TĚLO. VÁŠ PŘÍBĚH. VAŠE SOUVISLOSTI.',
+  headline: 'Co vám tělo říká?',
+  emphasis: 'Začněte mu rozumět.',
+  lead: 'Potíže se vracejí a vy už nevíte, co změnit? Rozumím tělu propojí to, co jíte, jak spíte a jak vám je, v osobním deníku sestaveném pomocí AI. Z vašich záznamů pak připraví přehled možných souvislostí a podnětů, o které můžete opřít svůj další krok.',
   story: {
     eyebrow: 'MOŽNÁ TO ZNÁTE',
     title: 'Nejtěžší je chtít něco změnit a nevědět, kde začít.',

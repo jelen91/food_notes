@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { TopBar } from '../../../components/AppShell';
 import { paymentClaimSucceeded } from '../../../lib/payment-return';
+import { BRAND, brandTitle } from '../../../lib/brand';
 
 /**
  * Návrat ze Stripe sám o sobě nic neodemyká. Přístup vzniká až tím, že ověřený webhook
@@ -88,8 +89,8 @@ export default function PlatbaHotovo() {
   return (
     <div className="page">
       <Head>
-        <title>Platba</title>
-        <meta name="theme-color" content="#f6f2ea" />
+        <title>{brandTitle('Platba')}</title>
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
       <TopBar />
       <div className="wrap">

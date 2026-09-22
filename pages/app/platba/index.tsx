@@ -8,6 +8,7 @@ import { Msg } from '../../../components/ui';
 import type { PublicOffer } from '../../../lib/offer';
 import { PURCHASE_POLICY_VERSION } from '../../../lib/purchase-policy';
 import { IMMEDIATE_SERVICE_REQUEST } from '../../../lib/purchase-consent';
+import { BRAND, brandTitle } from '../../../lib/brand';
 
 interface Status {
   account: { email: string; onboarding: string };
@@ -68,9 +69,9 @@ export default function Platba({ submitted, signedIn, summary, offer }: Props) {
   const shell = (children: React.ReactNode, title: string, subtitle?: string) => (
     <div className="page">
       <Head>
-        <title>{title} · Deník pozorování</title>
+        <title>{brandTitle(title)}</title>
         <meta name="robots" content="noindex, nofollow" />
-        <meta name="theme-color" content="#f6f2ea" />
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
       <TopBar />
       <div className="wrap">
@@ -193,7 +194,7 @@ export default function Platba({ submitted, signedIn, summary, offer }: Props) {
                 AI vyhodnocení se odemyká nejdříve po 21 dnech; během garance zkoušíš sestavení a používání
                 deníku. Třídenní garance neomezuje zákonná práva.
               </p>
-              <Link href="/podminky#garance">Podrobnosti garance a odstoupení</Link>
+              <Link href="/podminky#vraceni-penez">Podrobnosti garance a odstoupení</Link>
             </div>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20 }}>
               <input

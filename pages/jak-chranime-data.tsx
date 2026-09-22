@@ -5,7 +5,7 @@ export default function DataPage() {
   return (
     <AppShell
       title="Jak pracujeme s vašimi daty"
-      subtitle="Srozumitelný přehled fungování Deníku pozorování"
+      subtitle="Jak Rozumím tělu ukládá vaše záznamy a pracuje s AI"
       back={{ href: '/', label: 'Zpět na úvod' }}
     >
       <article className="card stack">

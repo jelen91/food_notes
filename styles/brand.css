@@ -1,0 +1,77 @@
+/* Sdílená značka ve veřejném webu i v osobním deníku. */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: #2c392e;
+  vertical-align: middle;
+}
+.brand-logo-mark {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 auto;
+}
+.brand-logo-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.brand-logo-name {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+.brand-logo-name > span {
+  color: #647751;
+}
+.brand-logo-caption {
+  font-family: var(--sans);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  color: #65715e;
+}
+.mark::after {
+  display: none;
+}
+.mark .brand-logo-mark,
+.footer-brand .brand-logo-mark {
+  width: 35px;
+  height: 35px;
+}
+.mark .brand-logo-name,
+.footer-brand .brand-logo-name {
+  font-size: 23px;
+}
+.marketing-footer > div > .footer-tagline {
+  max-width: 290px;
+  margin-top: 15px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.footer-domain {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  text-decoration: none;
+  color: #526a43;
+}
+@media (max-width: 680px) {
+  .brand-logo { gap: 8px; }
+  .brand-logo-mark { width: 35px; height: 35px; }
+  .brand-logo-name { font-size: 23px; }
+  .brand-logo-caption { font-size: 6.5px; letter-spacing: 0.09em; }
+  .brand-logo-copy { gap: 5px; }
+  .mark .brand-logo-name { font-size: 21px; }
+  .topbar-in { flex-wrap: wrap; }
+}
+@media (max-width: 360px) {
+  .marketing-nav { gap: 10px; }
+  .marketing-brand .brand-logo-mark { width: 30px; height: 30px; }
+  .marketing-brand .brand-logo-name { font-size: 21px; }
+  .marketing-brand .brand-logo-caption { font-size: 6px; }
+  .marketing-login { gap: 4px; }
+}

@@ -1,4 +1,9 @@
-# Landing pages a prodejní cesta
+# Rozumím tělu: landing pages a prodejní cesta
+
+Veřejná značka je **Rozumím tělu**, hlavní doména **https://rozumimtelu.cz**.
+Identitu, sdílený popis a doménu drží `lib/brand.ts`. Technický název repozitáře ani interní
+identifikátory existujících účtů a deníků se přejmenováním nemění. Připojení domény k hostingu
+a nastavení návratových odkazů řeší [domain.md](domain.md).
 
 Veřejné stránky používají společnou komponentu `components/marketing/LandingPage.tsx` a samostatný obsah v `lib/landing-pages.ts`:
 
@@ -30,7 +35,9 @@ Podle zadání je v lokálním Stripe testovacím nastavení vytvořena/použita
 
 `JournalDemo.tsx` je funkční ukázka se třemi záložkami: dnešní zápis, AI přehled a export. Lze měnit škálu 0–5, přidat poznámku a stáhnout vzorový Markdown. AI záložka a sekce `#vyhodnoceni` ukazují ručně připravený ilustrační přehled pro téma stránky: konkrétní počty a data, možné vysvětlení s nejistotou, další sledování a otázku pro konzultaci. Ukázka nevolá AI. Texty drží jen v React state; neposílá je na server ani do localStorage. Obnovení stránky ukázku smaže.
 
-`styles/marketing.css` obsahuje styl veřejných stránek a malé sjednocení barev/formulářů v existující aplikaci. Nepoužíváme vzdálené fonty, reklamní skripty ani cizí obrázky. HTML má jazyk `cs`. Veřejné LP mají vlastní titulky, description a Open Graph metadata; canonical se sestavuje jen z platné veřejné HTTPS `APP_URL`. Žádné parametry dotazníku se do canonical nepřidávají.
+`styles/marketing.css` obsahuje styl veřejných stránek a malé sjednocení barev/formulářů v existující aplikaci. Nepoužíváme vzdálené fonty, reklamní skripty ani cizí obrázky. HTML má jazyk `cs`. Veřejné LP mají vlastní titulky, description a Open Graph metadata; canonical vždy používá hlavní doménu z `BRAND.origin`, nezávisle na adrese lokálního náhledu nebo runtime `APP_URL`. Žádné reklamní ani dotazníkové parametry se do canonical nepřidávají. `APP_URL` dál samostatně řídí provozní odkazy v e-mailech a návraty ze Stripe.
+
+`/sitemap.xml` obsahuje pouze homepage, veřejné tematické LP, podmínky a popis ochrany dat. `/robots.txt` vylučuje dotazník, aplikaci, API a osobní deníky. Tyto cesty navíc posílají `X-Robots-Tag: noindex, nofollow, noarchive`; skutečnou ochranu dat dál zajišťuje autorizace, nikoli pravidla pro vyhledávače. Veřejné LP se kvůli osobnímu odkazu pro návrat do deníku nadále posílají s `Cache-Control: private, no-store`.
 
 ## Sestavení deníku: dotazník v3 a prompt v4
 
@@ -87,7 +94,7 @@ Nasazené veřejné stránky zatím nelze považovat za potvrzení funkčního �
 - Stripe live klíče, live jednorázová cena 949 Kč a odpovídající webhook; dosavadní cena je testovací.
 - Resend, ověřený odesílatel a praktické ověření doručení přístupových i obnovovacích e-mailů.
 - Jméno nebo firma provozovatele, IČO, sídlo, kontakt podpory a konečné obchodní a informační dokumenty.
-- Veřejná HTTPS doména, provozní databáze a tajné klíče, funkční poskytovatel AI a ověřená dostupnost zvoleného modelu.
+- Připojená HTTPS doména `rozumimtelu.cz` a odpovídající `APP_URL`, provozní databáze a tajné klíče, funkční poskytovatel AI a ověřená dostupnost zvoleného modelu.
 - Celý nákup se syntetickými údaji v testovacím prostředí: platba → webhook → e-mail → přihlášení → vytvoření deníku → zápisy → oprávněné jednorázové vyhodnocení → export/smazání. Čekací lhůtu ověřovat v izolované sadě dat, ne změnou skutečného nákupu zákazníka.
 
 Testy s mockovaným poskytovatelem neověřují kvalitu živých odpovědí ani doručení e-mailů. Před kampaní otestuj aktuální generátor i rozbor na syntetických scénářích; neposílej do modelu skutečné zákaznické údaje bez odpovídajícího pokynu a souhlasu.

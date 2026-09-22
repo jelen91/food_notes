@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
 import { TopBar } from '../../../components/AppShell';
 import { getTenantBySlug } from '../../../lib/tenant/registry';
+import { BRAND, brandTitle } from '../../../lib/brand';
 
 interface Props {
   slug: string;
@@ -42,8 +43,8 @@ export default function TenantLogin({ slug, title }: Props) {
   return (
     <div className="page">
       <Head>
-        <title>{title}</title>
-        <meta name="theme-color" content="#f6f2ea" />
+        <title>{brandTitle(title)}</title>
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
 
       <TopBar href={`/t/${slug}/login`} />

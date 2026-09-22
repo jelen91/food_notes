@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f8f8f2"/>
+  <path d="M740 0H1200V630H740C855 473 838 208 740 0Z" fill="#eef0e5"/>
+  <g transform="translate(68 56)">
+    <rect width="52" height="52" rx="17" fill="#40553d"/>
+    <g transform="scale(1.08333)" fill="none">
+      <path d="M12 31V21C12 15.5 15.5 12 21 12H22C27.5 12 31 15.5 31 20.5C31 25.5 27.5 28 22.5 28H20L34 36" stroke="#f8f8f2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#d9b291"><circle cx="12" cy="32" r="3.1"/><circle cx="34" cy="36" r="3.1"/><circle cx="31" cy="20" r="2.6"/></g>
+    </g>
+    <text x="70" y="37" font-family="Georgia, serif" font-size="37" fill="#2c392e">Rozumím <tspan fill="#647751">tělu</tspan></text>
+  </g>
+  <text x="1132" y="88" text-anchor="end" font-family="Arial, sans-serif" font-size="20" fill="#526a43">rozumimtelu.cz</text>
+  <text x="68" y="195" font-family="Arial, sans-serif" font-size="13" letter-spacing="2.5" fill="#65715e">OSOBNÍ DENÍK SESTAVENÝ POMOCÍ AI</text>
+  <text x="64" y="280" font-family="Georgia, serif" font-size="66" letter-spacing="-2" fill="#2c392e">Co vám tělo říká?</text>
+  <text x="64" y="359" font-family="Georgia, serif" font-size="66" font-style="italic" letter-spacing="-2" fill="#647751">Začněte mu rozumět.</text>
+  <text x="68" y="421" font-family="Arial, sans-serif" font-size="23" fill="#686e61">Váš osobní deník. Souvislosti,</text>
+  <text x="68" y="456" font-family="Arial, sans-serif" font-size="23" fill="#686e61">které vám mohly unikat.</text>
+  <line x1="68" y1="517" x2="686" y2="517" stroke="#dedfd3"/>
+  <text x="68" y="558" font-family="Arial, sans-serif" font-size="17" fill="#526a43">Jídlo</text>
+  <circle cx="127" cy="551" r="2.5" fill="#a2ad94"/>
+  <text x="145" y="558" font-family="Arial, sans-serif" font-size="17" fill="#526a43">Spánek</text>
+  <circle cx="227" cy="551" r="2.5" fill="#a2ad94"/>
+  <text x="245" y="558" font-family="Arial, sans-serif" font-size="17" fill="#526a43">Jak vám je</text>
+  <g transform="translate(814 175)">
+    <rect x="5" y="8" width="312" height="352" rx="23" fill="#dfe4d6"/>
+    <rect width="312" height="352" rx="23" fill="#fffefb" stroke="#d5dacb"/>
+    <text x="28" y="43" font-family="Georgia, serif" font-size="21" fill="#2c392e">Váš příběh v souvislostech</text>
+    <line x1="28" y1="63" x2="284" y2="63" stroke="#e3e6db"/>
+    <path d="M47 111C47 153 47 147 47 187S47 222 47 264" fill="none" stroke="#cad2bd" stroke-width="2"/>
+    <g fill="#40553d"><circle cx="47" cy="107" r="17"/><circle cx="47" cy="184" r="17"/><circle cx="47" cy="261" r="17"/></g>
+    <g font-family="Arial, sans-serif" font-size="15" fill="#fffefb" text-anchor="middle"><text x="47" y="112">1</text><text x="47" y="189">2</text><text x="47" y="266">3</text></g>
+    <g font-family="Arial, sans-serif" fill="#2c392e" font-size="19"><text x="78" y="109">Deník na míru</text><text x="78" y="186">Vaše pozorování</text><text x="78" y="263">Osobní AI přehled</text></g>
+    <g font-family="Arial, sans-serif" fill="#6b7362" font-size="13"><text x="78" y="131">Podle toho, co prožíváte.</text><text x="78" y="208">Drobné detaily vašich dnů.</text><text x="78" y="285">Podněty pro další krok.</text></g>
+    <text x="28" y="326" font-family="Arial, sans-serif" font-size="11" fill="#748366">VAŠE TĚLO. VÁŠ PŘÍBĚH.</text>
+  </g>
+</svg>

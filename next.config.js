@@ -14,7 +14,13 @@ const nextConfig = {
   // Samostatný lokální náhled nesmí přepisovat .next běžícího vývojového serveru.
   distDir: process.env.FOOD_NOTES_PREVIEW === '1' ? '.next-preview' : '.next',
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      ...['/app/:path*', '/t/:path*', '/api/:path*', '/dotaznik'].map((source) => ({
+        source,
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+      })),
+    ];
   },
   async redirects() {
     // Stránka /blood se přejmenovala na /labs – ať fungují uložené odkazy na ploše telefonu.

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import AppShell, { Disclaimer } from '../../components/AppShell';
 import { Field, Msg } from '../../components/ui';
+import { BRAND } from '../../lib/brand';
 
 export default function Registrace() {
   const [email, setEmail] = useState('');
@@ -38,7 +39,10 @@ export default function Registrace() {
   };
 
   return (
-    <AppShell title="Založení účtu" subtitle="Deník vlastních pozorování">
+    <AppShell
+      title="Založení účtu"
+      subtitle={`Vítej v ${BRAND.name}. Tvůj osobní deník pro hledání souvislostí.`}
+    >
       <form className="card" onSubmit={submit}>
         <div className="stack">
           <Field label="E-mail">

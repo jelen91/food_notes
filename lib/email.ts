@@ -3,6 +3,8 @@
 // Do e-mailů nepatří nic ze zdravotního obsahu – jen odkaz a nutné minimum. Když není
 // RESEND_API_KEY nastavený (lokální vývoj), odkaz se vypíše do konzole a nic se neposílá.
 
+import { BRAND, brandTitle } from './brand';
+
 interface SendArgs {
   to: string;
   subject: string;
@@ -69,8 +71,8 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   const link = `${appUrl()}/app/overeni?token=${encodeURIComponent(token)}`;
   await send({
     to,
-    subject: 'Ověření e-mailu',
-    text: `Dobrý den,\n\npotvrďte prosím svůj e-mail otevřením odkazu:\n${link}\n\nOdkaz platí 3 dny. Pokud jste si účet nezakládali, tento e-mail ignorujte.`,
+    subject: brandTitle('Ověření e-mailu'),
+    text: `Dobrý den,\n\nvítejte v ${BRAND.name}. Potvrďte prosím svůj e-mail otevřením odkazu:\n${link}\n\nOdkaz platí 3 dny. Pokud jste si účet nezakládali, tento e-mail ignorujte.\n\n${BRAND.name}\n${BRAND.domain}`,
   });
 }
 
@@ -78,8 +80,8 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   const link = `${appUrl()}/app/nove-heslo?token=${encodeURIComponent(token)}`;
   await send({
     to,
-    subject: 'Obnovení hesla',
-    text: `Dobrý den,\n\nnové heslo si nastavíte na tomto odkazu:\n${link}\n\nOdkaz platí 1 hodinu a lze ho použít jednou. Pokud jste o změnu hesla nežádali, nic nedělejte.`,
+    subject: brandTitle('Obnovení hesla'),
+    text: `Dobrý den,\n\nnové heslo do ${BRAND.name} si nastavíte na tomto odkazu:\n${link}\n\nOdkaz platí 1 hodinu a lze ho použít jednou. Pokud jste o změnu hesla nežádali, nic nedělejte.\n\n${BRAND.name}\n${BRAND.domain}`,
   });
 }
 
@@ -92,8 +94,8 @@ export async function sendAccountReadyEmail(to: string, token: string, accountId
   const receipt = await purchaseReceipt(accountId);
   await send({
     to,
-    subject: 'Váš deník je připravený',
-    text: `Dobrý den,\n\nplatba proběhla a deník je připravený. Nastavte si prosím heslo, kterým se do něj budete přihlašovat:\n${link}\n\nOdkaz platí 7 dní; když vyprší, nové heslo si vyžádáte na ${appUrl()}/app/zapomenute-heslo.\n\nDěkujeme.${receipt}`,
+    subject: brandTitle('Váš přístup k deníku je aktivní'),
+    text: `Dobrý den,\n\nplatba proběhla a váš přístup do ${BRAND.name} je aktivní. Nastavte si prosím heslo, kterým se do svého deníku budete přihlašovat:\n${link}\n\nOdkaz platí 7 dní; když vyprší, nové heslo si vyžádáte na ${appUrl()}/app/zapomenute-heslo.\n\nDěkujeme, že hledáte souvislosti s námi.\n${BRAND.name}\n${BRAND.domain}${receipt}`,
   });
 }
 
@@ -101,7 +103,7 @@ export async function sendPaymentConfirmationEmail(to: string, accountId?: strin
   const receipt = await purchaseReceipt(accountId);
   await send({
     to,
-    subject: 'Platba potvrzena',
-    text: `Dobrý den,\n\nplatba byla potvrzena a přístup je aktivní. Pokračovat můžete zde:\n${appUrl()}/app\n\nDěkujeme.${receipt}`,
+    subject: brandTitle('Platba potvrzena'),
+    text: `Dobrý den,\n\nplatba byla potvrzena a přístup do ${BRAND.name} je aktivní. Pokračovat můžete zde:\n${appUrl()}/app\n\nDěkujeme, že hledáte souvislosti s námi.\n${BRAND.name}\n${BRAND.domain}${receipt}`,
   });
 }

@@ -1,8 +1,8 @@
 {
-  "name": "health-journal",
+  "name": "rozumim-telu",
   "version": "0.2.0",
   "private": true,
-  "description": "Zdravotní deník: události, denní škály, epizody slabosti, Apple Health a laboratoře s exportem pro AI analýzu.",
+  "description": "Rozumím tělu — osobní deník na míru a AI přehled souvislostí mezi jídlem, režimem a tím, jak se cítíte.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

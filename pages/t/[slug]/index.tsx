@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Head from 'next/head';
 import type { GetServerSideProps } from 'next';
 import { TopBar } from '../../../components/AppShell';
+import { BRAND, brandTitle } from '../../../lib/brand';
 import EntryEditor, { emptyEpisode, emptyEvent } from '../../../components/EntryEditor';
 import { Msg, Scale } from '../../../components/ui';
 import { entryFieldsText, entryLabel } from '../../../lib/format';
@@ -223,8 +224,8 @@ export default function TenantHome({ config }: Props) {
   return (
     <div className="page">
       <Head>
-        <title>{config.title}</title>
-        <meta name="theme-color" content="#f6f2ea" />
+        <title>{brandTitle(config.title)}</title>
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
 
       <TopBar

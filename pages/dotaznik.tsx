@@ -9,6 +9,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import type { GetServerSideProps } from 'next';
 import { TopBar } from '../components/AppShell';
+import { BRAND, brandTitle } from '../lib/brand';
 import { ChipGroup, Field, Msg } from '../components/ui';
 import { missingRequired } from '../lib/questionnaire';
 import { getLandingPage } from '../lib/landing-pages';
@@ -225,14 +226,14 @@ export default function Dotaznik({ definition, ulozene, temaTitle }: Props) {
   const shell = (children: React.ReactNode, subtitle?: string) => (
     <div className="page">
       <Head>
-        <title>Sestavíme deník na míru</title>
+        <title>{brandTitle('Sestavíme váš osobní deník')}</title>
         <meta name="robots" content="noindex, nofollow" />
-        <meta name="theme-color" content="#f6f2ea" />
+        <meta name="theme-color" content={BRAND.themeColor} />
       </Head>
       <TopBar />
       <div className="wrap">
         <div className="hdr">
-          <h1>Sestavíme deník na míru</h1>
+          <h1>Začneme vaším příběhem</h1>
           {subtitle && <p>{subtitle}</p>}
           {consentConfirmed && (
             <div

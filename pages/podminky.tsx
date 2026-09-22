@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { GetServerSideProps } from 'next';
 import AppShell from '../components/AppShell';
+import { BRAND } from '../lib/brand';
 import {
   ACCESS_MONTHS,
   EXPORT_GRACE_DAYS,
@@ -43,8 +44,8 @@ export default function PurchaseTermsPage({ seller = null }: Props) {
           </section>
         )}
         <p>
-          Tyto produktové podmínky popisují délku placeného přístupu, obsah balíčku a vrácení peněz za Deník
-          pozorování. Platí pro objednávky, u kterých byly před zaplacením výslovně přijaty. Dřívější
+          Tyto produktové podmínky popisují délku placeného přístupu, obsah balíčku a vrácení peněz za službu{' '}
+          {BRAND.name}. Platí pro objednávky, u kterých byly před zaplacením výslovně přijaty. Dřívější
           objednávky se řídí podmínkami sjednanými při jejich nákupu; tato stránka je zpětně nemění.
         </p>
 

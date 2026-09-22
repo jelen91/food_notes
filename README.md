@@ -1,4 +1,10 @@
-# Zdravotní deník — platforma pro aplikace na míru
+# Rozumím tělu — osobní deník na míru
+
+**Rozumím tělu** na **https://rozumimtelu.cz** pomáhá zachytit vlastní pozorování a hledat
+souvislosti mezi jídlem, režimem a tím, jak se člověk cítí. AI sestaví osobní deník a po splnění
+podmínek připraví jednorázový přehled. Jde o pomůcku pro orientaci a další konzultaci, nikoli diagnózu.
+Značka a veřejná doména jsou sjednocené v `lib/brand.ts`; připojení domény a provozní nastavení
+popisuje [docs/domain.md](docs/domain.md).
 
 Jeden engine, ze kterého se dá postavit deník na míru pro každého zákazníka. Zákazník dostane
 vlastní odkaz `/t/<slug>` a heslo, jeho data jsou v databázi zašifrovaná vlastním klíčem.
@@ -163,5 +169,8 @@ Data se slučují; `?replace=1` přepíše celý denní snímek.
 ## Deployment na Vercel
 
 1. Push na GitHub
-2. Environment variables: `MONGODB_URI`, `AUTH_SECRET`, `MASTER_KEY`, `APP_URL`
+2. Environment variables: `MONGODB_URI`, `AUTH_SECRET`, `MASTER_KEY`, `APP_URL=https://rozumimtelu.cz`
 3. Deploy — nový zákazník se pak nasazuje commitem konfigurace
+
+Před přesměrováním zákazníků dokonči připojení domény, HTTPS a kontrolu platebních/e-mailových odkazů
+podle [návodu k doméně](docs/domain.md). Rebranding zdrojového kódu sám doménu ani nasazení nemění.

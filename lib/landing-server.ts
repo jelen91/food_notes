@@ -2,6 +2,7 @@ import type { GetServerSidePropsContext } from 'next';
 import type { LandingPageContent } from './landing-pages';
 import type { LandingProps } from '../components/marketing/LandingPage';
 import { getPublicOffer } from './offer';
+import { BRAND } from './brand';
 
 async function resumePath(cookies: Record<string, string>): Promise<LandingProps['resume']> {
   const { ACCOUNT_COOKIE, verifyAccountSession } = await import('./session');
@@ -38,15 +39,8 @@ export async function landingProps(
     resumePath(ctx.req.cookies ?? {}).catch(() => null),
     getPublicOffer(),
   ]);
-  let canonical: string | null = null;
-  try {
-    if (process.env.APP_URL) {
-      const origin = new URL(process.env.APP_URL);
-      if (origin.protocol === 'https:' && !['localhost', '127.0.0.1'].includes(origin.hostname))
-        canonical = `${origin.origin}${content.slug ? `/lp/${content.slug}` : '/'}`;
-    }
-  } catch {
-    /* Bez platné domény nevyrábíme chybný canonical. */
-  }
+  // Marketing vždy odkazuje na hlavní doménu. APP_URL zůstává runtime nastavením
+  // návratů z plateb a odkazů v e-mailech, včetně izolovaného lokálního testování.
+  const canonical = `${BRAND.origin}${content.slug ? `/lp/${encodeURIComponent(content.slug)}` : '/'}`;
   return { content, offer, resume, canonical };
 }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import AppShell from '../../components/AppShell';
 import { Field, Msg } from '../../components/ui';
+import { BRAND } from '../../lib/brand';
 
 export default function Prihlaseni() {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export default function Prihlaseni() {
   };
 
   return (
-    <AppShell title="Přihlášení">
+    <AppShell title="Přihlášení" subtitle={`Vítej zpátky v ${BRAND.name}. Pokračuj tam, kde jsi skončil.`}>
       <form className="card" onSubmit={submit}>
         <div className="stack">
           <Field label="E-mail">

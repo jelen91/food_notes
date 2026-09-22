@@ -1,10 +1,12 @@
 import type { AnalysisResponse } from './analysis/types';
+import { BRAND } from './brand';
 
 /** Plain text keeps AI output inert when saving a copy for a consultation. */
 export function analysisAsText(data: AnalysisResponse): string {
   if (!data.report || data.status !== 'completed') return '';
   const { report, coverage } = data;
   const lines = [
+    BRAND.name,
     'AI přehled z vlastních pozorování',
     '',
     'Výstup AI může obsahovat chyby. Není diagnózou ani doporučením léčby.',

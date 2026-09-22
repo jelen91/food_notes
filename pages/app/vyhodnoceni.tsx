@@ -23,7 +23,6 @@ export default function Vyhodnoceni() {
         back={{ href: '/app/ucet', label: 'Účet a data' }}
       >
         <Head>
-          <title>Můj AI přehled | Deník pozorování</title>
           <meta name="robots" content="noindex, nofollow" />
         </Head>
         {error && (
